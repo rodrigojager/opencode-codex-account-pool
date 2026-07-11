@@ -1,0 +1,80 @@
+{
+  "name": "opencode-codex-account-pool",
+  "version": "0.1.0",
+  "description": "Multi-account ChatGPT OAuth rotation for OpenCode Codex",
+  "type": "module",
+  "main": "./dist/server.js",
+  "types": "./dist/src/server.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./server": {
+      "types": "./dist/src/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./tui": {
+      "types": "./dist/src/tui.d.ts",
+      "import": "./dist/tui.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun run clean && bun run build:js && bun run build:types",
+    "clean": "bun -e \"await import('node:fs/promises').then((fs) => fs.rm('dist', { recursive: true, force: true }))\"",
+    "build:js": "bun build ./src/server.ts ./src/tui.tsx --outdir ./dist --target bun --format esm --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/core --external @opentui/solid",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun test && bun run build && npm pack --dry-run",
+    "install:global": "bun run build && bun ./scripts/install.mjs --global",
+    "install:global:dry-run": "bun run build && bun ./scripts/install.mjs --global --dry-run",
+    "prepublishOnly": "bun run check"
+  },
+  "oc-plugin": [
+    "server",
+    "tui"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "openai",
+    "codex",
+    "oauth",
+    "multi-account"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.17.0",
+    "@opentui/core": ">=0.1.0",
+    "@opentui/solid": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentui/core": { "optional": true },
+    "@opentui/solid": { "optional": true }
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.17.18",
+    "@opentui/core": "^0.4.3",
+    "@opentui/solid": "^0.4.3",
+    "@types/bun": "latest",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "opencode": ">=1.17.0"
+  }
+}
