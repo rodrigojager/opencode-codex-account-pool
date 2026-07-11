@@ -48,41 +48,63 @@ The account binding belongs to the **session**, not to the agent. Changing from 
 - At least one ChatGPT account with Plus/Pro Codex access.
 - Network access to ChatGPT OAuth, Codex, and quota endpoints.
 - A configured OpenCode provider/model for the handoff summarizer if summaries are enabled.
-- Bun only when building or developing this repository locally. Bun is not required for a normal published-package installation.
+- Bun is installed automatically by the one-command installer when it is not already available. A manual source installation also requires Bun.
 
 Remove or disable other plugins that take ownership of OpenAI/Codex authentication, especially `opencode-openai-codex-auth`. Two authentication plugins for the same provider can override each other depending on load order.
 
 ### Installation
 
-#### Published package
+#### One-command install from GitHub
 
-After the package is published, install both the server and TUI targets globally:
+Quit all OpenCode processes, then copy and run the command for your operating system.
 
-```bash
-opencode plugin opencode-codex-account-pool --global
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/rodrigojager/opencode-codex-account-pool/main/scripts/bootstrap.ps1 | iex
 ```
 
-You can also open OpenCode's plugin manager, press `shift+i`, enter `opencode-codex-account-pool`, and choose the global scope.
-
-#### From this repository
+macOS or Linux:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/rodrigojager/opencode-codex-account-pool/main/scripts/bootstrap.sh | bash
+```
+
+No repository clone or package-manager publication is required. The bootstrap installer:
+
+- Downloads the latest `main` branch from this GitHub repository.
+- Installs Bun from the official `bun.sh` installer only when Bun is missing.
+- Builds the plugin in a persistent local directory.
+- Creates config backups with the `.codex-pool.backup` suffix.
+- Removes the conflicting `opencode-openai-codex-auth` registration.
+- Registers `dist/server.js` in the global `opencode.json` and `dist/tui.js` in the global `tui.json`.
+
+The default installation directory is `%LOCALAPPDATA%\opencode\plugins\opencode-codex-account-pool` on Windows. On macOS/Linux it is `$XDG_DATA_HOME/opencode/plugins/opencode-codex-account-pool` when `XDG_DATA_HOME` is set, or `~/.local/share/opencode/plugins/opencode-codex-account-pool` otherwise. Set `OPENCODE_CODEX_PLUGIN_DIR` before running the command to choose another location.
+
+Run the same command again whenever you want to update the installed copy from `main`.
+
+You are piping a public script into your shell. Review [`bootstrap.ps1`](scripts/bootstrap.ps1) or [`bootstrap.sh`](scripts/bootstrap.sh) first if required by your security policy.
+
+After the command finishes, start OpenCode again.
+
+#### Manual source installation
+
+If you prefer to inspect and run the repository yourself:
+
+```bash
+git clone https://github.com/rodrigojager/opencode-codex-account-pool.git
+cd opencode-codex-account-pool
 bun install
 bun run install:global
 ```
 
-The local installer builds the project, creates backups with the `.codex-pool.backup` suffix, removes the conflicting `opencode-openai-codex-auth` registration, and adds:
-
-- `dist/server.js` to the global `opencode.json`.
-- `dist/tui.js` to the global `tui.json`.
-
-Preview the changes without writing files:
+Preview the config changes without writing them:
 
 ```bash
 bun run install:global:dry-run
 ```
 
-After installation or any plugin registration change, quit **all** OpenCode processes and start OpenCode again. Plugins and configuration-time files are loaded at startup.
+After any plugin registration change, quit **all** OpenCode processes and start OpenCode again. Plugins and configuration-time files are loaded at startup.
 
 ### Manual plugin registration
 
@@ -385,7 +407,7 @@ The server target accepts optional plugin-level options. Most users should keep 
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
     [
-      "opencode-codex-account-pool/server",
+      "file:///ABSOLUTE/PATH/opencode-codex-account-pool/dist/server.js",
       {
         "providerName": "Codex Account Pool",
         "quiet": false,
@@ -405,7 +427,7 @@ The server target accepts optional plugin-level options. Most users should keep 
 | `codexApiEndpoint` | Overrides the Codex responses endpoint. Intended for development or controlled testing. |
 | `storePath` | Overrides only the account credential store path. Prefer `OPENCODE_CODEX_DATA_DIR` when you want to relocate all plugin data. |
 
-When using a local build, replace the package spec in the tuple with the `file:///.../dist/server.js` URL. Restart OpenCode after changing plugin-level options.
+Use the persistent `dist/server.js` path created by the bootstrap installer or your manual checkout. Restart OpenCode after changing plugin-level options.
 
 ### Agent tools
 
@@ -544,41 +566,63 @@ O vínculo da conta pertence à **sessão**, não ao agente. Trocar de agente de
 - Pelo menos uma conta ChatGPT com Plus/Pro e acesso ao Codex.
 - Acesso de rede aos endpoints de OAuth, Codex e quota do ChatGPT.
 - Um provider/model configurado no OpenCode para o summarizer de handoff, caso summaries sejam habilitados.
-- Bun apenas para compilar ou desenvolver este repositório localmente. Bun não é necessário em uma instalação normal do pacote publicado.
+- Bun é instalado automaticamente pelo instalador de um comando quando ainda não estiver disponível. Uma instalação manual pelo código-fonte também exige Bun.
 
 Remova ou desabilite outros plugins que assumam a autenticação OpenAI/Codex, principalmente `opencode-openai-codex-auth`. Dois plugins de autenticação para o mesmo provider podem sobrescrever um ao outro dependendo da ordem de carregamento.
 
 ### Instalação
 
-#### Pacote publicado
+#### Instalação pelo GitHub com um comando
 
-Depois que o pacote estiver publicado, instale globalmente os targets de servidor e TUI:
+Feche todos os processos do OpenCode e depois copie e execute o comando do seu sistema operacional.
 
-```bash
-opencode plugin opencode-codex-account-pool --global
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/rodrigojager/opencode-codex-account-pool/main/scripts/bootstrap.ps1 | iex
 ```
 
-Também é possível abrir o gerenciador de plugins do OpenCode, pressionar `shift+i`, informar `opencode-codex-account-pool` e escolher o escopo global.
-
-#### A partir deste repositório
+macOS ou Linux:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/rodrigojager/opencode-codex-account-pool/main/scripts/bootstrap.sh | bash
+```
+
+Não é necessário clonar o repositório nem publicar em um gerenciador de pacotes. O instalador bootstrap:
+
+- Baixa a versão mais recente da branch `main` deste repositório GitHub.
+- Instala Bun pelo instalador oficial de `bun.sh` somente quando Bun não está disponível.
+- Compila o plugin em um diretório local persistente.
+- Cria backups dos configs com o sufixo `.codex-pool.backup`.
+- Remove o registro conflitante de `opencode-openai-codex-auth`.
+- Registra `dist/server.js` no `opencode.json` global e `dist/tui.js` no `tui.json` global.
+
+O diretório padrão é `%LOCALAPPDATA%\opencode\plugins\opencode-codex-account-pool` no Windows. No macOS/Linux, ele será `$XDG_DATA_HOME/opencode/plugins/opencode-codex-account-pool` quando `XDG_DATA_HOME` estiver definido ou `~/.local/share/opencode/plugins/opencode-codex-account-pool` caso contrário. Defina `OPENCODE_CODEX_PLUGIN_DIR` antes do comando para escolher outro local.
+
+Execute o mesmo comando novamente sempre que quiser atualizar a instalação com a versão mais recente da branch `main`.
+
+O comando executa no shell um script público baixado da internet. Consulte [`bootstrap.ps1`](scripts/bootstrap.ps1) ou [`bootstrap.sh`](scripts/bootstrap.sh) antes de executar, caso isso seja exigido pela sua política de segurança.
+
+Quando o comando terminar, abra o OpenCode novamente.
+
+#### Instalação manual pelo código-fonte
+
+Se preferir inspecionar e executar o repositório manualmente:
+
+```bash
+git clone https://github.com/rodrigojager/opencode-codex-account-pool.git
+cd opencode-codex-account-pool
 bun install
 bun run install:global
 ```
 
-O instalador local compila o projeto, cria backups com o sufixo `.codex-pool.backup`, remove o registro conflitante de `opencode-openai-codex-auth` e adiciona:
-
-- `dist/server.js` ao `opencode.json` global.
-- `dist/tui.js` ao `tui.json` global.
-
-Para visualizar as mudanças sem gravar arquivos:
+Para visualizar as mudanças de configuração sem gravá-las:
 
 ```bash
 bun run install:global:dry-run
 ```
 
-Depois de instalar ou alterar o registro do plugin, feche **todos** os processos do OpenCode e abra novamente. Plugins e arquivos de configuração de inicialização são carregados durante a abertura.
+Depois de alterar o registro do plugin, feche **todos** os processos do OpenCode e abra novamente. Plugins e arquivos de configuração de inicialização são carregados durante a abertura.
 
 ### Registro manual do plugin
 
@@ -881,7 +925,7 @@ O target de servidor aceita opções adicionais no registro do plugin. A maioria
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
     [
-      "opencode-codex-account-pool/server",
+      "file:///CAMINHO/ABSOLUTO/opencode-codex-account-pool/dist/server.js",
       {
         "providerName": "Codex Account Pool",
         "quiet": false,
@@ -901,7 +945,7 @@ O target de servidor aceita opções adicionais no registro do plugin. A maioria
 | `codexApiEndpoint` | Substitui o endpoint de responses do Codex. Destinado a desenvolvimento ou testes controlados. |
 | `storePath` | Altera somente o caminho do arquivo de credenciais. Prefira `OPENCODE_CODEX_DATA_DIR` para mover todos os dados do plugin. |
 
-Ao usar uma compilação local, substitua o pacote na tupla pela URL `file:///.../dist/server.js`. Reinicie o OpenCode depois de alterar opções de registro.
+Use o caminho persistente de `dist/server.js` criado pelo instalador bootstrap ou pelo seu checkout manual. Reinicie o OpenCode depois de alterar opções de registro.
 
 ### Ferramentas dos agentes
 
