@@ -201,12 +201,13 @@ export declare class AccountStore {
     }): Promise<boolean>;
     renameAccount(id: string, label: string): Promise<boolean>;
     setDefault(id: string): Promise<boolean>;
+    setPriority(id: string, position: number): Promise<boolean>;
     setActive(id: string): Promise<boolean>;
     setEnabled(id: string, enabled: boolean): Promise<boolean>;
     remove(id: string): Promise<boolean>;
     recordOutcome(id: string, status: number, ok: boolean, cooldownUntil?: number): Promise<void>;
     outcome(id: string, status: number, ok: boolean, cooldownUntil?: number): Promise<void>;
     updateQuota(id: string, quota: AccountQuota): Promise<boolean>;
-    moveToBack(id: string): Promise<void>;
+    moveToBack(id: string): Promise<boolean>;
 }
 export type { Account };

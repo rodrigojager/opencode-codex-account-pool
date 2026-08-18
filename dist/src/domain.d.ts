@@ -92,7 +92,7 @@ export declare const accountQuotaSchema: z.ZodObject<{
     credits: z.ZodOptional<z.ZodObject<{
         hasCredits: z.ZodOptional<z.ZodBoolean>;
         unlimited: z.ZodOptional<z.ZodBoolean>;
-        balance: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>;
+        balance: z.ZodPreprocess<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
     }, z.core.$strip>>;
     fetchedAt: z.ZodNumber;
     source: z.ZodEnum<{
@@ -148,7 +148,7 @@ export declare const accountSchema: z.ZodObject<{
         credits: z.ZodOptional<z.ZodObject<{
             hasCredits: z.ZodOptional<z.ZodBoolean>;
             unlimited: z.ZodOptional<z.ZodBoolean>;
-            balance: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>;
+            balance: z.ZodPreprocess<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
         }, z.core.$strip>>;
         fetchedAt: z.ZodNumber;
         source: z.ZodEnum<{
@@ -211,7 +211,7 @@ export declare const accountsFileSchema: z.ZodObject<{
             credits: z.ZodOptional<z.ZodObject<{
                 hasCredits: z.ZodOptional<z.ZodBoolean>;
                 unlimited: z.ZodOptional<z.ZodBoolean>;
-                balance: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>;
+                balance: z.ZodPreprocess<z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
             }, z.core.$strip>>;
             fetchedAt: z.ZodNumber;
             source: z.ZodEnum<{

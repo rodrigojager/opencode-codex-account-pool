@@ -31,7 +31,7 @@ The account binding belongs to the **session**, not to the agent. Changing from 
 | Multiple ChatGPT accounts | Add and manage multiple Plus/Pro accounts through browser OAuth or device code. |
 | Per-session account | Each OpenCode session can use its own account, independently of the selected agent. |
 | Sticky selection | A healthy assigned account stays attached to the session instead of rotating on every request. |
-| Default account | Choose which account should be preferred by sessions that do not have a binding yet. |
+| Explicit account priority | Arrange accounts as primary, secondary, tertiary, and beyond. New sessions start with the primary account, and failover follows the saved order. |
 | Quota visibility | See primary and secondary usage, reset times, plan information, and account health. |
 | Proactive handoff | At the end of a turn, the plugin can prepare another account before the current one reaches its configured threshold. |
 | Failure recovery | Replayable requests can fail over after authentication errors, rate limits, server errors, or transport failures. |
@@ -176,7 +176,9 @@ Selecting an account opens these actions:
 | Action | Behavior |
 |---|---|
 | `Set active for current session` | Attaches this account to the session currently open in the TUI. It is disabled when no session is open or the account is disabled. |
-| `Set default for new sessions` | Makes this the preferred account for sessions that do not have an account binding yet. Existing session bindings are unchanged. |
+| `Set as primary` | Moves this account to the first position used by new sessions. Existing session bindings are unchanged. |
+| `Move up in priority` | Moves this account one position earlier in the failover sequence. |
+| `Move down in priority` | Moves this account one position later in the failover sequence. |
 | `Rename` | Changes only the local display label. |
 | `Disable` / `Enable` | Removes or restores the account as a candidate for new Codex requests. Credentials remain stored until removal. |
 | `Details` | Shows email, workspace, organization, plan, enabled state, attached session count, quota windows, token expiration, and health counters. |
@@ -240,7 +242,9 @@ This screen lists goals waiting for a Codex quota reset, with the session, state
 
 #### During normal work
 
-When a session first sends a Codex request, the plugin uses its existing account binding. If there is no binding, it prefers the configured default account and otherwise chooses a healthy enabled account with available quota. That account remains attached to the session while it is usable.
+When a session first sends a Codex request, the plugin uses its existing account binding. If there is no binding, it starts with the first available account in the saved priority order. That account remains attached to the session while it is usable. On exhaustion, failover continues from the current position: primary to secondary, secondary to tertiary, and then onward.
+
+Adding or reauthenticating an account does not promote it automatically. New accounts are appended to the end of the priority order until you move them.
 
 Different sessions may use different accounts at the same time. Opening the same session in two windows represents the same work and therefore shares the same binding and handoff state.
 
@@ -436,9 +440,10 @@ The server exposes these tools to agents, subject to the active agent's permissi
 | Tool | Purpose |
 |---|---|
 | `codex_account_current` | Show the account attached to the current session. |
-| `codex_accounts_list` | List accounts, status, and quota without credentials. |
+| `codex_accounts_list` | List accounts in priority order, with status and quota but without credentials. |
 | `codex_accounts_set_active` | Attach an enabled account to the current session. |
-| `codex_accounts_set_default` | Set the preferred account for unbound sessions. |
+| `codex_accounts_set_default` | Move an account to primary priority (compatibility alias). |
+| `codex_accounts_set_priority` | Move an account to a numbered priority, starting at `1`. |
 | `codex_accounts_enable` | Enable or disable an account. |
 | `codex_accounts_rename` | Change an account's local label. |
 | `codex_accounts_remove` | Queue safe account removal after confirmation. |
@@ -549,7 +554,7 @@ O vínculo da conta pertence à **sessão**, não ao agente. Trocar de agente de
 | Múltiplas contas ChatGPT | Adicione e gerencie várias contas Plus/Pro por OAuth no navegador ou device code. |
 | Conta por sessão | Cada sessão do OpenCode pode usar sua própria conta, independentemente do agente selecionado. |
 | Seleção sticky | Uma conta saudável permanece ligada à sessão, em vez de trocar a cada requisição. |
-| Conta padrão | Escolha qual conta deve ser preferida por sessões que ainda não possuem vínculo. |
+| Prioridade explícita de contas | Organize as contas como primária, secundária, terciária e seguintes. Novas sessões começam pela primária e o failover segue a ordem salva. |
 | Visualização de quota | Consulte consumo primário e secundário, resets, plano e saúde da conta. |
 | Handoff preventivo | No fim de um turno, o plugin pode preparar outra conta antes de a atual atingir o limite configurado. |
 | Recuperação de falhas | Requisições que podem ser repetidas aceitam failover após erros de autenticação, rate limit, servidor ou transporte. |
@@ -694,7 +699,9 @@ Selecionar uma conta abre estas ações:
 | Ação | Comportamento |
 |---|---|
 | `Set active for current session` | Vincula a conta à sessão atualmente aberta na TUI. Fica indisponível quando nenhuma sessão está aberta ou a conta está desabilitada. |
-| `Set default for new sessions` | Torna esta a conta preferida para sessões que ainda não possuem vínculo. Sessões já vinculadas não são alteradas. |
+| `Set as primary` | Move esta conta para a primeira posição usada por novas sessões. Sessões já vinculadas não são alteradas. |
+| `Move up in priority` | Move esta conta uma posição para cima na sequência de failover. |
+| `Move down in priority` | Move esta conta uma posição para baixo na sequência de failover. |
 | `Rename` | Altera apenas o label local exibido. |
 | `Disable` / `Enable` | Remove ou devolve a conta ao conjunto de candidatas para novas requisições Codex. As credenciais permanecem armazenadas até a remoção. |
 | `Details` | Exibe email, workspace, organização, plano, estado, quantidade de sessões, janelas de quota, expiração do token e contadores de saúde. |
@@ -758,7 +765,9 @@ Essa tela lista goals aguardando reset da quota Codex, com sessão, estado, hor�
 
 #### Durante o trabalho normal
 
-Quando uma sessão envia sua primeira requisição Codex, o plugin usa o vínculo de conta existente. Se ainda não houver vínculo, ele prefere a conta padrão configurada e, caso necessário, escolhe uma conta habilitada, saudável e com quota. Essa conta permanece ligada à sessão enquanto puder ser usada.
+Quando uma sessão envia sua primeira requisição Codex, o plugin usa o vínculo de conta existente. Se ainda não houver vínculo, ele começa pela primeira conta disponível na ordem de prioridade salva. Essa conta permanece ligada à sessão enquanto puder ser usada. Quando ela se esgota, o failover continua da posição atual: primária para secundária, secundária para terciária e assim por diante.
+
+Adicionar ou reautenticar uma conta não a promove automaticamente. Contas novas entram no fim da ordem até que você as mova.
 
 Sessões diferentes podem usar contas diferentes ao mesmo tempo. Abrir a mesma sessão em duas janelas representa o mesmo trabalho e, portanto, compartilha vínculo e estado de handoff.
 
@@ -954,9 +963,10 @@ O servidor expõe estas ferramentas aos agentes, respeitando as permissões do a
 | Ferramenta | Finalidade |
 |---|---|
 | `codex_account_current` | Mostrar a conta vinculada à sessão atual. |
-| `codex_accounts_list` | Listar contas, estado e quota sem credenciais. |
+| `codex_accounts_list` | Listar contas na ordem de prioridade, com estado e quota, sem credenciais. |
 | `codex_accounts_set_active` | Vincular uma conta habilitada à sessão atual. |
-| `codex_accounts_set_default` | Definir a conta preferida para sessões sem vínculo. |
+| `codex_accounts_set_default` | Mover uma conta para a prioridade primária (alias de compatibilidade). |
+| `codex_accounts_set_priority` | Mover uma conta para uma prioridade numérica, começando em `1`. |
 | `codex_accounts_enable` | Habilitar ou desabilitar uma conta. |
 | `codex_accounts_rename` | Alterar o label local da conta. |
 | `codex_accounts_remove` | Agendar remoção segura após confirmação. |
