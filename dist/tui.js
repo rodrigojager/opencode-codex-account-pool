@@ -14362,7 +14362,7 @@ var accountQuotaSchema = exports_external.object({
   credits: exports_external.object({
     hasCredits: exports_external.boolean().optional(),
     unlimited: exports_external.boolean().optional(),
-    balance: exports_external.union([exports_external.string(), exports_external.number()]).optional()
+    balance: exports_external.preprocess((value) => value === null ? undefined : value, exports_external.union([exports_external.string(), exports_external.number()]).optional())
   }).optional(),
   fetchedAt: exports_external.number(),
   source: exports_external.enum(["usage-endpoint", "headers", "response"]),
@@ -14656,6 +14656,26 @@ class SettingsStore {
 import { randomUUID as randomUUID2 } from "crypto";
 import { readFile as readFile2, rename as rename2 } from "fs/promises";
 var emptyAccounts = () => ({ version: 2, initialized: false, revision: 0, order: [], accounts: [] });
+function normalizePriority(data) {
+  const accountIDs = new Set(data.accounts.map((account) => account.id));
+  const seen = new Set;
+  const order = [];
+  const append = (id) => {
+    if (!id || !accountIDs.has(id) || seen.has(id))
+      return;
+    seen.add(id);
+    order.push(id);
+  };
+  for (const id of data.order)
+    append(id);
+  if (!order.length)
+    append(data.defaultAccountID);
+  for (const account of data.accounts)
+    append(account.id);
+  data.order = order;
+  data.defaultAccountID = order[0];
+  return data;
+}
 var legacySchema = exports_external.object({
   version: exports_external.literal(1),
   initialized: exports_external.boolean().default(false),
@@ -14683,7 +14703,7 @@ class AccountStore {
   }
   async migrate() {
     try {
-      return await readJson(this.path, accountsFileSchema, emptyAccounts);
+      return normalizePriority(await readJson(this.path, accountsFileSchema, emptyAccounts));
     } catch (error51) {
       const raw = JSON.parse(await readFile2(this.path, "utf8"));
       const legacy = legacySchema.safeParse(raw);
@@ -14694,7 +14714,7 @@ class AccountStore {
         initialized: legacy.data.initialized,
         revision: 1,
         defaultAccountID: legacy.data.active,
-        order: legacy.data.order,
+        order: [legacy.data.active, ...legacy.data.order].filter((id) => Boolean(id)),
         accounts: legacy.data.accounts.map((item) => accountSchema.parse({
           id: item.id,
           label: item.label,
@@ -14709,6 +14729,7 @@ class AccountStore {
           health: item.health
         }))
       };
+      normalizePriority(migrated);
       await atomicWrite(`${this.path}.v1.backup`, raw, true);
       await atomicWrite(this.path, migrated, true);
       return migrated;
@@ -14746,7 +14767,9 @@ class AccountStore {
       fallback: emptyAccounts,
       secret: true,
       async update(data) {
+        normalizePriority(data);
         const result = await fn(data);
+        normalizePriority(data);
         data.revision++;
         return result;
       }
@@ -14769,8 +14792,6 @@ class AccountStore {
         Object.assign(account, Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== undefined)), { updatedAt: now, enabled: true });
         if (normalized.label)
           account.label = normalized.label;
-        data.defaultAccountID = account.id;
-        data.order = [account.id, ...data.order.filter((id) => id !== account.id)];
         data.initialized = true;
         return structuredClone(account);
       }
@@ -14785,7 +14806,6 @@ class AccountStore {
       });
       data.accounts.push(next);
       data.order.push(next.id);
-      data.defaultAccountID = next.id;
       data.initialized = true;
       return structuredClone(next);
     });
@@ -14819,11 +14839,17 @@ class AccountStore {
     });
   }
   async setDefault(id) {
+    return this.setPriority(id, 0);
+  }
+  async setPriority(id, position) {
     return this.update((data) => {
       if (!data.accounts.some((item) => item.id === id))
         return false;
-      data.defaultAccountID = id;
-      data.order = [id, ...data.order.filter((item) => item !== id)];
+      const order = data.order.filter((item) => item !== id);
+      const index = Math.max(0, Math.min(Math.trunc(position), order.length));
+      order.splice(index, 0, id);
+      data.order = order;
+      data.defaultAccountID = order[0];
       return true;
     });
   }
@@ -14845,8 +14871,7 @@ class AccountStore {
       const before = data.accounts.length;
       data.accounts = data.accounts.filter((item) => item.id !== id);
       data.order = data.order.filter((item) => item !== id);
-      if (data.defaultAccountID === id)
-        data.defaultAccountID = data.order.find((item) => data.accounts.some((account) => account.id === item && account.enabled));
+      data.defaultAccountID = data.order[0];
       return before !== data.accounts.length;
     });
   }
@@ -14880,11 +14905,7 @@ class AccountStore {
     });
   }
   async moveToBack(id) {
-    return this.update((data) => {
-      data.order = [...data.order.filter((item) => item !== id), id];
-      if (data.defaultAccountID === id)
-        data.defaultAccountID = data.order.find((item) => data.accounts.some((account) => account.id === item && account.enabled));
-    });
+    return this.setPriority(id, Number.MAX_SAFE_INTEGER);
   }
 }
 
@@ -14946,10 +14967,6 @@ function blockedUntil(account, now = Date.now()) {
 function nearLimit(account, primary, secondary) {
   return (account.quota?.primary?.usedPercent ?? 0) >= primary || (account.quota?.secondary?.usedPercent ?? 0) >= secondary;
 }
-function headroom(account) {
-  return Math.min(100 - (account.quota?.primary?.usedPercent ?? 0), 100 - (account.quota?.secondary?.usedPercent ?? 0));
-}
-
 class QuotaService {
   accounts;
   fetchFn;
@@ -15064,6 +15081,33 @@ class BindingStore {
     return (await this.snapshot()).reservations.filter((item) => item.accountID === accountID && item.expiresAt > now);
   }
 }
+function orderAccounts(accounts, order = []) {
+  const byID = new Map(accounts.map((account) => [account.id, account]));
+  const seen = new Set;
+  const result = [];
+  for (const id of order) {
+    const account = byID.get(id);
+    if (!account || seen.has(id))
+      continue;
+    seen.add(id);
+    result.push(account);
+  }
+  for (const account of accounts) {
+    if (seen.has(account.id))
+      continue;
+    seen.add(account.id);
+    result.push(account);
+  }
+  return result;
+}
+function rotateAccounts(accounts, preferred) {
+  if (!preferred)
+    return [...accounts];
+  const index = accounts.findIndex((account) => account.id === preferred);
+  if (index <= 0)
+    return [...accounts];
+  return [...accounts.slice(index), ...accounts.slice(0, index)];
+}
 function selectAccount(accounts, preferred, now = Date.now()) {
   const enabled = accounts.filter((item) => item.enabled);
   const available = enabled.filter((item) => blockedUntil(item, now) <= now && (item.health.cooldownUntil ?? 0) <= now);
@@ -15072,7 +15116,7 @@ function selectAccount(accounts, preferred, now = Date.now()) {
   const sticky = preferred ? available.find((item) => item.id === preferred) : undefined;
   if (sticky)
     return sticky;
-  return [...available].sort((a, b) => headroom(b) - headroom(a) || (a.lastUsedAt ?? 0) - (b.lastUsedAt ?? 0))[0];
+  return available[0];
 }
 function earliestAccount(accounts, now = Date.now()) {
   return accounts.filter((item) => item.enabled).map((account) => ({ account, at: Math.max(blockedUntil(account, now), account.health.cooldownUntil ?? 0) })).sort((a, b) => a.at - b.at)[0];
@@ -15407,7 +15451,7 @@ class ResumeScheduler {
       const snapshot = await this.accounts.snapshot();
       let target = snapshot.accounts.find((item) => item.id === job.targetAccountID && item.enabled);
       if (!target)
-        target = earliestAccount(snapshot.accounts)?.account;
+        target = earliestAccount(orderAccounts(snapshot.accounts, snapshot.order))?.account;
       if (!target) {
         await this.jobs.finish(job.id, "failed", { lastError: "No enabled account" });
         return;
@@ -15422,7 +15466,8 @@ class ResumeScheduler {
       const refreshed = (await this.accounts.snapshot()).accounts.find((item) => item.id === target.id) ?? target;
       const available = blockedUntil(refreshed);
       if (available > Date.now()) {
-        const earliest = earliestAccount((await this.accounts.snapshot()).accounts);
+        const latest = await this.accounts.snapshot();
+        const earliest = earliestAccount(orderAccounts(latest.accounts, latest.order));
         await this.jobs.finish(job.id, "waiting", { resumeAt: earliest?.at ?? available, targetAccountID: earliest?.account.id ?? refreshed.id, attempts: job.attempts + 1 });
         return;
       }
@@ -15577,6 +15622,9 @@ function openExternal(url2) {
   const command = process.platform === "win32" ? ["rundll32.exe", "url.dll,FileProtocolHandler", url2] : process.platform === "darwin" ? ["open", url2] : ["xdg-open", url2];
   const child = spawn(command[0], command.slice(1), { detached: true, stdio: "ignore" });
   child.unref();
+}
+function priorityLabel(index) {
+  return ["Primary", "Secondary", "Tertiary"][index] ?? `Priority ${index + 1}`;
 }
 var tui = async (api2) => {
   const settingsStore = new SettingsStore;
@@ -15752,9 +15800,14 @@ var tui = async (api2) => {
   async function accountDetails(account) {
     const sid = currentSession();
     const binding = sid ? await bindings.get(sid) : undefined;
+    const snapshot = await accounts.snapshot();
+    const ordered = orderAccounts(snapshot.accounts, snapshot.order);
+    const priority = ordered.findIndex((item) => item.id === account.id);
     const options = [
       { title: "Set active for current session", value: "active", disabled: !sid || !account.enabled },
-      { title: "Set default for new sessions", value: "default", disabled: !account.enabled },
+      { title: "Set as primary", value: "primary", disabled: priority === 0 },
+      { title: "Move up in priority", value: "up", disabled: priority <= 0 },
+      { title: "Move down in priority", value: "down", disabled: priority < 0 || priority >= ordered.length - 1 },
       { title: "Rename", value: "rename" },
       { title: account.enabled ? "Disable" : "Enable", value: "toggle" },
       { title: "Details", value: "details" },
@@ -15763,7 +15816,7 @@ var tui = async (api2) => {
       { title: "Remove", value: "remove" },
       { title: "Back", value: "back" }
     ];
-    select(`${account.label}${binding?.accountID === account.id ? " (active)" : ""}`, options, async (action) => {
+    select(`${account.label} (${priorityLabel(priority)})${binding?.accountID === account.id ? " (active)" : ""}`, options, async (action) => {
       if (action === "back")
         return accountsDialog();
       if (action === "active" && sid) {
@@ -15771,8 +15824,16 @@ var tui = async (api2) => {
         api2.ui.toast({ message: "Account bound to current session", variant: "success" });
         return accountsDialog();
       }
-      if (action === "default") {
-        await accounts.setDefault(account.id);
+      if (action === "primary") {
+        await accounts.setPriority(account.id, 0);
+        return accountsDialog();
+      }
+      if (action === "up") {
+        await accounts.setPriority(account.id, priority - 1);
+        return accountsDialog();
+      }
+      if (action === "down") {
+        await accounts.setPriority(account.id, priority + 1);
         return accountsDialog();
       }
       if (action === "toggle") {
@@ -15788,14 +15849,15 @@ var tui = async (api2) => {
         const quota2 = account.quota;
         return dialog.replace(() => /* @__PURE__ */ jsxDEV(DialogAlert, {
           title: account.label,
-          message: `Email: ${account.email ?? "unknown"}
+          message: `Pool priority: ${priority + 1} (${priorityLabel(priority)})
+Email: ${account.email ?? "unknown"}
 Workspace: ${account.workspaceAccountID ?? "unknown"}
 Organization: ${account.organizationID ?? "unknown"}
 Plan: ${account.planType ?? "unknown"}
 Enabled: ${account.enabled ? "yes" : "no"}
 Sessions: ${affected.length}
-Primary: ${quota2?.primary?.usedPercent ?? "?"}%${quota2?.primary?.resetAt ? `, reset ${new Date(quota2.primary.resetAt).toLocaleString()}` : ""}
-Secondary: ${quota2?.secondary?.usedPercent ?? "?"}%${quota2?.secondary?.resetAt ? `, reset ${new Date(quota2.secondary.resetAt).toLocaleString()}` : ""}
+Primary quota window: ${quota2?.primary?.usedPercent ?? "?"}%${quota2?.primary?.resetAt ? `, reset ${new Date(quota2.primary.resetAt).toLocaleString()}` : ""}
+Secondary quota window: ${quota2?.secondary?.usedPercent ?? "?"}%${quota2?.secondary?.resetAt ? `, reset ${new Date(quota2.secondary.resetAt).toLocaleString()}` : ""}
 Token expires: ${new Date(account.expiresAt).toLocaleString()}
 Successes/failures: ${account.health.successes}/${account.health.failures}`,
           onConfirm: () => accountDetails(account)
@@ -15874,12 +15936,13 @@ Successes/failures: ${account.health.successes}/${account.health.failures}`,
     const snapshot = await accounts.snapshot();
     const sid = currentSession();
     const binding = sid ? await bindings.get(sid) : undefined;
-    const rows = snapshot.accounts.map((account) => {
+    const ordered = orderAccounts(snapshot.accounts, snapshot.order);
+    const rows = ordered.map((account, index) => {
       const primary = account.quota?.primary?.usedPercent;
       const secondary = account.quota?.secondary?.usedPercent;
       const blocked = blockedUntil(account);
       const quotaText = blocked > Date.now() ? `blocked until ${new Date(blocked).toLocaleTimeString()}` : primary !== undefined ? `${primary}% / ${secondary ?? "?"}%` : "quota unknown";
-      return { title: `${binding?.accountID === account.id ? "\u25CF" : "\u25CB"} ${account.label}`, description: `${account.email ?? account.workspaceAccountID ?? ""} ${quotaText}${account.enabled ? "" : " disabled"}`, value: account };
+      return { title: `${index + 1}. ${binding?.accountID === account.id ? "\u25CF" : "\u25CB"} ${account.label}`, description: `${priorityLabel(index)} | ${account.email ?? account.workspaceAccountID ?? ""} ${quotaText}${account.enabled ? "" : " disabled"}`, value: account };
     });
     rows.push({ title: "+ Add account", value: { add: true } });
     rows.push({ title: "Refresh all quotas", value: { refresh: true } });

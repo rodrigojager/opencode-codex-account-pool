@@ -99,6 +99,8 @@ export declare class BindingStore {
         createdAt: number;
     }[]>;
 }
+export declare function orderAccounts(accounts: Account[], order?: string[]): Account[];
+export declare function rotateAccounts(accounts: Account[], preferred?: string): Account[];
 export declare function selectAccount(accounts: Account[], preferred?: string, now?: number): {
     id: string;
     label: string;
