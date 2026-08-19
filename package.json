@@ -31,9 +31,10 @@
     "clean": "bun -e \"await import('node:fs/promises').then((fs) => fs.rm('dist', { recursive: true, force: true }))\"",
     "build:js": "bun build ./src/server.ts ./src/tui.tsx --outdir ./dist --target bun --format esm --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/core --external @opentui/solid",
     "build:types": "tsc -p tsconfig.build.json",
+    "smoke:dist": "bun -e \"const server = await import('./dist/server.js'); const tui = await import('./dist/tui.js'); if (!server.default || !tui.default) throw new Error('Plugin entrypoint missing')\"",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "check": "bun run typecheck && bun test && bun run build && npm pack --dry-run",
+    "check": "bun run typecheck && bun test && bun run build && bun run smoke:dist && npm pack --dry-run",
     "install:global": "bun run build && bun ./scripts/install.mjs --global",
     "install:global:dry-run": "bun run build && bun ./scripts/install.mjs --global --dry-run",
     "prepublishOnly": "bun run check"
