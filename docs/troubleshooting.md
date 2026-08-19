@@ -26,6 +26,8 @@ Use `Refresh all quotas` in `/codex-accounts` or call `codex_quota_refresh`. The
 
 Check `/codex-handoff-status`, verify the configured provider/model exists in that OpenCode instance, and use the popup's test action. If primary and fallback fail, deterministic goal/todo state remains available.
 
+After a rate limit, the summary job is intentionally deferred on disk. The default cooldown is five minutes unless the provider supplies a longer `Retry-After`. Other sessions share that circuit and queue, so they do not immediately repeat the same failing request. The primary and fallback are both optional; an absent primary means generated summaries are disabled, not that account rotation is broken.
+
 ## Goal did not resume
 
 Open `/codex-waiting`. Auto-resume requires a captured active goal, an existing idle session, a valid account, and confirmed available quota.

@@ -13,6 +13,7 @@
 | Account binding | Session |
 | Goal ledger | Session |
 | Summary | Session |
+| Summary queue and model circuits | Global with cross-process lease |
 | Context epoch | Session |
 | Resume job | Session with cross-process lease |
 
@@ -34,11 +35,13 @@ The original OpenCode transcript is untouched. The transform operates on cloned 
 ## Summary path
 
 ```text
-session.idle -> immutable snapshot -> child session -> primary model
+session.idle -> persistent priority queue -> global lease -> child session -> primary model
              -> optional fallback -> schema validation -> compare-and-swap commit
 ```
 
-Concurrent idle events coalesce. Stale outputs cannot replace summaries based on newer messages.
+Concurrent idle events coalesce, and only one summary request runs across OpenCode processes that share the data directory. Routine jobs do not block the parent session. Quota and emergency callers wait only for a bounded interval; their jobs remain persisted if another session already owns the lease.
+
+Each profile has a persistent circuit. A provider failure opens its circuit and defers the job; rate limits use a five-minute default cooldown and honor a longer `Retry-After`. A configured fallback gets one immediate attempt after an eligible primary failure. Later jobs skip blocked profiles instead of producing retry storms.
 
 ## Persistence
 

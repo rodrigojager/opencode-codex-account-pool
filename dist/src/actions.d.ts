@@ -12,7 +12,7 @@ export declare class AccountActionStore {
         id: string;
         type: "remove";
         accountID: string;
-        state: "completed" | "failed" | "claimed" | "pending";
+        state: "completed" | "claimed" | "failed" | "pending";
         createdAt: number;
         updatedAt: number;
         owner?: string | undefined;
@@ -23,7 +23,7 @@ export declare class AccountActionStore {
         id: string;
         type: "remove";
         accountID: string;
-        state: "completed" | "failed" | "claimed" | "pending";
+        state: "completed" | "claimed" | "failed" | "pending";
         createdAt: number;
         updatedAt: number;
         owner?: string | undefined;
@@ -34,7 +34,7 @@ export declare class AccountActionStore {
         id: string;
         type: "remove";
         accountID: string;
-        state: "completed" | "failed" | "claimed" | "pending";
+        state: "completed" | "claimed" | "failed" | "pending";
         createdAt: number;
         updatedAt: number;
         owner?: string | undefined;
@@ -45,7 +45,7 @@ export declare class AccountActionStore {
         id: string;
         type: "remove";
         accountID: string;
-        state: "completed" | "failed" | "claimed" | "pending";
+        state: "completed" | "claimed" | "failed" | "pending";
         createdAt: number;
         updatedAt: number;
         owner?: string | undefined;

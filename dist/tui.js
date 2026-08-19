@@ -551,7 +551,7 @@ function $constructor(name, initializer, params) {
         value: {
           def,
           constr: _,
-          traits: new Set
+          traits: new Se
         },
         enumerable: false
       });
@@ -1257,7 +1257,7 @@ function issue(...args) {
       message: iss,
       code: "custom",
       input,
-      inst
+      ins
     };
   }
   return { ...iss };
@@ -1731,7 +1731,7 @@ var $ZodCheckLessThan = /* @__PURE__ */ $constructor("$ZodCheckLessThan", (inst,
       input: payload.value,
       inclusive: def.inclusive,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -1759,7 +1759,7 @@ var $ZodCheckGreaterThan = /* @__PURE__ */ $constructor("$ZodCheckGreaterThan", 
       input: payload.value,
       inclusive: def.inclusive,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -1781,7 +1781,7 @@ var $ZodCheckMultipleOf = /* @__PURE__ */ $constructor("$ZodCheckMultipleOf", (i
       divisor: def.value,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -1809,7 +1809,7 @@ var $ZodCheckNumberFormat = /* @__PURE__ */ $constructor("$ZodCheckNumberFormat"
           code: "invalid_type",
           continue: false,
           input,
-          inst
+          ins
         });
         return;
       }
@@ -1823,7 +1823,7 @@ var $ZodCheckNumberFormat = /* @__PURE__ */ $constructor("$ZodCheckNumberFormat"
             inst,
             origin,
             inclusive: true,
-            continue: !def.abort
+            continue: !def.abor
           });
         } else {
           payload.issues.push({
@@ -1834,7 +1834,7 @@ var $ZodCheckNumberFormat = /* @__PURE__ */ $constructor("$ZodCheckNumberFormat"
             inst,
             origin,
             inclusive: true,
-            continue: !def.abort
+            continue: !def.abor
           });
         }
         return;
@@ -1848,7 +1848,7 @@ var $ZodCheckNumberFormat = /* @__PURE__ */ $constructor("$ZodCheckNumberFormat"
         minimum,
         inclusive: true,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
     if (input > maximum) {
@@ -1859,7 +1859,7 @@ var $ZodCheckNumberFormat = /* @__PURE__ */ $constructor("$ZodCheckNumberFormat"
         maximum,
         inclusive: true,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
   };
@@ -1883,7 +1883,7 @@ var $ZodCheckBigIntFormat = /* @__PURE__ */ $constructor("$ZodCheckBigIntFormat"
         minimum,
         inclusive: true,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
     if (input > maximum) {
@@ -1894,7 +1894,7 @@ var $ZodCheckBigIntFormat = /* @__PURE__ */ $constructor("$ZodCheckBigIntFormat"
         maximum,
         inclusive: true,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
   };
@@ -1923,7 +1923,7 @@ var $ZodCheckMaxSize = /* @__PURE__ */ $constructor("$ZodCheckMaxSize", (inst, d
       inclusive: true,
       input,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -1951,7 +1951,7 @@ var $ZodCheckMinSize = /* @__PURE__ */ $constructor("$ZodCheckMinSize", (inst, d
       inclusive: true,
       input,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -1981,7 +1981,7 @@ var $ZodCheckSizeEquals = /* @__PURE__ */ $constructor("$ZodCheckSizeEquals", (i
       exact: true,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2010,7 +2010,7 @@ var $ZodCheckMaxLength = /* @__PURE__ */ $constructor("$ZodCheckMaxLength", (ins
       inclusive: true,
       input,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2039,7 +2039,7 @@ var $ZodCheckMinLength = /* @__PURE__ */ $constructor("$ZodCheckMinLength", (ins
       inclusive: true,
       input,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2070,7 +2070,7 @@ var $ZodCheckLengthEquals = /* @__PURE__ */ $constructor("$ZodCheckLengthEquals"
       exact: true,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2097,7 +2097,7 @@ var $ZodCheckStringFormat = /* @__PURE__ */ $constructor("$ZodCheckStringFormat"
         input: payload.value,
         ...def.pattern ? { pattern: def.pattern.toString() } : {},
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     });
   else
@@ -2116,7 +2116,7 @@ var $ZodCheckRegex = /* @__PURE__ */ $constructor("$ZodCheckRegex", (inst, def) 
       input: payload.value,
       pattern: def.pattern.toString(),
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2148,7 +2148,7 @@ var $ZodCheckIncludes = /* @__PURE__ */ $constructor("$ZodCheckIncludes", (inst,
       includes: def.includes,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2171,7 +2171,7 @@ var $ZodCheckStartsWith = /* @__PURE__ */ $constructor("$ZodCheckStartsWith", (i
       prefix: def.prefix,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2194,7 +2194,7 @@ var $ZodCheckEndsWith = /* @__PURE__ */ $constructor("$ZodCheckEndsWith", (inst,
       suffix: def.suffix,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2231,7 +2231,7 @@ var $ZodCheckMimeType = /* @__PURE__ */ $constructor("$ZodCheckMimeType", (inst,
       values: def.mime,
       input: payload.value.type,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2413,7 +2413,7 @@ var $ZodString = /* @__PURE__ */ $constructor("$ZodString", (inst, def) => {
       expected: "string",
       code: "invalid_type",
       input: payload.value,
-      inst
+      ins
     });
     return payload;
   };
@@ -2463,7 +2463,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
             note: "Invalid URL format",
             input: payload.value,
             inst,
-            continue: !def.abort
+            continue: !def.abor
           });
           return;
         }
@@ -2479,7 +2479,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
             pattern: def.hostname.source,
             input: payload.value,
             inst,
-            continue: !def.abort
+            continue: !def.abor
           });
         }
       }
@@ -2493,7 +2493,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
             pattern: def.protocol.source,
             input: payload.value,
             inst,
-            continue: !def.abort
+            continue: !def.abor
           });
         }
       }
@@ -2509,7 +2509,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
         format: "url",
         input: payload.value,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
   };
@@ -2576,7 +2576,7 @@ var $ZodIPv6 = /* @__PURE__ */ $constructor("$ZodIPv6", (inst, def) => {
         format: "ipv6",
         input: payload.value,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
   };
@@ -2613,7 +2613,7 @@ var $ZodCIDRv6 = /* @__PURE__ */ $constructor("$ZodCIDRv6", (inst, def) => {
         format: "cidrv6",
         input: payload.value,
         inst,
-        continue: !def.abort
+        continue: !def.abor
       });
     }
   };
@@ -2644,7 +2644,7 @@ var $ZodBase64 = /* @__PURE__ */ $constructor("$ZodBase64", (inst, def) => {
       format: "base64",
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2667,7 +2667,7 @@ var $ZodBase64URL = /* @__PURE__ */ $constructor("$ZodBase64URL", (inst, def) =>
       format: "base64url",
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2705,7 +2705,7 @@ var $ZodJWT = /* @__PURE__ */ $constructor("$ZodJWT", (inst, def) => {
       format: "jwt",
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2719,7 +2719,7 @@ var $ZodCustomStringFormat = /* @__PURE__ */ $constructor("$ZodCustomStringForma
       format: def.format,
       input: payload.value,
       inst,
-      continue: !def.abort
+      continue: !def.abor
     });
   };
 });
@@ -2765,7 +2765,7 @@ var $ZodBoolean = /* @__PURE__ */ $constructor("$ZodBoolean", (inst, def) => {
       expected: "boolean",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -2784,7 +2784,7 @@ var $ZodBigInt = /* @__PURE__ */ $constructor("$ZodBigInt", (inst, def) => {
       expected: "bigint",
       code: "invalid_type",
       input: payload.value,
-      inst
+      ins
     });
     return payload;
   };
@@ -2803,7 +2803,7 @@ var $ZodSymbol = /* @__PURE__ */ $constructor("$ZodSymbol", (inst, def) => {
       expected: "symbol",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -2820,7 +2820,7 @@ var $ZodUndefined = /* @__PURE__ */ $constructor("$ZodUndefined", (inst, def) =>
       expected: "undefined",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -2837,7 +2837,7 @@ var $ZodNull = /* @__PURE__ */ $constructor("$ZodNull", (inst, def) => {
       expected: "null",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -2857,7 +2857,7 @@ var $ZodNever = /* @__PURE__ */ $constructor("$ZodNever", (inst, def) => {
       expected: "never",
       code: "invalid_type",
       input: payload.value,
-      inst
+      ins
     });
     return payload;
   };
@@ -2872,7 +2872,7 @@ var $ZodVoid = /* @__PURE__ */ $constructor("$ZodVoid", (inst, def) => {
       expected: "void",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -2895,7 +2895,7 @@ var $ZodDate = /* @__PURE__ */ $constructor("$ZodDate", (inst, def) => {
       code: "invalid_type",
       input,
       ...isDate ? { received: "Invalid Date" } : {},
-      inst
+      ins
     });
     return payload;
   };
@@ -2915,7 +2915,7 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
         expected: "array",
         code: "invalid_type",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3010,7 +3010,7 @@ function handleCatchall(proms, input, payload, ctx, def, inst) {
       code: "unrecognized_keys",
       keys: unrecognized,
       input,
-      inst
+      ins
     });
   }
   if (!proms.length)
@@ -3059,7 +3059,7 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
         expected: "object",
         code: "invalid_type",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3195,7 +3195,7 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
         expected: "object",
         code: "invalid_type",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3371,7 +3371,7 @@ var $ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("$ZodDiscriminatedUnio
         code: "invalid_type",
         expected: "object",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3390,7 +3390,7 @@ var $ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("$ZodDiscriminatedUnio
       options: Array.from(disc.value.keys()),
       input,
       path: [def.discriminator],
-      inst
+      ins
     });
     return payload;
   };
@@ -3608,7 +3608,7 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
         expected: "record",
         code: "invalid_type",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3631,7 +3631,7 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
               issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
               input: key,
               path: [key],
-              inst
+              ins
             });
             continue;
           }
@@ -3698,7 +3698,7 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
               issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
               input: key,
               path: [key],
-              inst
+              ins
             });
           }
           continue;
@@ -3734,7 +3734,7 @@ var $ZodMap = /* @__PURE__ */ $constructor("$ZodMap", (inst, def) => {
         expected: "map",
         code: "invalid_type",
         input,
-        inst
+        ins
       });
       return payload;
     }
@@ -3834,7 +3834,7 @@ var $ZodEnum = /* @__PURE__ */ $constructor("$ZodEnum", (inst, def) => {
       code: "invalid_value",
       values,
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -3856,7 +3856,7 @@ var $ZodLiteral = /* @__PURE__ */ $constructor("$ZodLiteral", (inst, def) => {
       code: "invalid_value",
       values: def.values,
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -3871,7 +3871,7 @@ var $ZodFile = /* @__PURE__ */ $constructor("$ZodFile", (inst, def) => {
       expected: "file",
       code: "invalid_type",
       input,
-      inst
+      ins
     });
     return payload;
   };
@@ -4015,7 +4015,7 @@ function handleNonOptionalResult(payload, inst) {
       code: "invalid_type",
       expected: "nonoptional",
       input: payload.value,
-      inst
+      ins
     });
   }
   return payload;
@@ -4277,7 +4277,7 @@ var $ZodFunction = /* @__PURE__ */ $constructor("$ZodFunction", (inst, def) => {
         code: "invalid_type",
         expected: "function",
         input: payload.value,
-        inst
+        ins
       });
       return payload;
     }
@@ -4299,13 +4299,13 @@ var $ZodFunction = /* @__PURE__ */ $constructor("$ZodFunction", (inst, def) => {
           items: args[0],
           rest: args[1]
         }),
-        output: inst._def.output
+        output: inst._def.outpu
       });
     }
     return new F({
       type: "function",
       input: args[0],
-      output: inst._def.output
+      output: inst._def.outpu
     });
   };
   inst.output = (output) => {
@@ -4313,7 +4313,7 @@ var $ZodFunction = /* @__PURE__ */ $constructor("$ZodFunction", (inst, def) => {
     return new F({
       type: "function",
       input: inst._def.input,
-      output
+      outpu
     });
   };
   return inst;
@@ -4364,7 +4364,7 @@ function handleRefineResult(result, payload, input, inst) {
       input,
       inst,
       path: [...inst._zod.def.path ?? []],
-      continue: !inst._zod.def.abort
+      continue: !inst._zod.def.abor
     };
     if (inst._zod.def.params)
       _iss.params = inst._zod.def.params;
@@ -4425,7 +4425,7 @@ __export(exports_locales, {
   bg: () => bg_default,
   be: () => be_default,
   az: () => az_default,
-  ar: () => ar_default
+  ar: () => ar_defaul
 });
 
 // node_modules/zod/v4/locales/ar.js
@@ -10962,7 +10962,7 @@ function _intersection(Class2, left, right) {
   return new Class2({
     type: "intersection",
     left,
-    right
+    righ
   });
 }
 function _tuple(Class2, items, _paramsOrRest, _params) {
@@ -11078,7 +11078,7 @@ function _pipe(Class2, in_, out) {
   return new Class2({
     type: "pipe",
     in: in_,
-    out
+    ou
   });
 }
 function _readonly(Class2, innerType) {
@@ -11481,7 +11481,7 @@ function finalize(ctx, schema) {
     result.$schema = "http://json-schema.org/draft-07/schema#";
   } else if (ctx.target === "draft-04") {
     result.$schema = "http://json-schema.org/draft-04/schema#";
-  } else if (ctx.target === "openapi-3.0") {} else {}
+  } else if (ctx.target === "openapi-3.0") {}
   if (ctx.external?.uri) {
     const id = ctx.external.registry.get(schema)?.id;
     if (!id)
@@ -11725,7 +11725,7 @@ var literalProcessor = (schema, ctx, json, _params) => {
     if (val === undefined) {
       if (ctx.unrepresentable === "throw") {
         throw new Error("Literal `undefined` cannot be represented in JSON Schema");
-      } else {}
+      }
     } else if (typeof val === "bigint") {
       if (ctx.unrepresentable === "throw") {
         throw new Error("BigInt literals cannot be represented in JSON Schema");
@@ -13269,7 +13269,7 @@ function intersection(left, right) {
   return new ZodIntersection({
     type: "intersection",
     left,
-    right
+    righ
   });
 }
 var ZodTuple = /* @__PURE__ */ $constructor("ZodTuple", (inst, def) => {
@@ -13278,7 +13278,7 @@ var ZodTuple = /* @__PURE__ */ $constructor("ZodTuple", (inst, def) => {
   inst._zod.processJSONSchema = (ctx, json, params) => tupleProcessor(inst, ctx, json, params);
   inst.rest = (rest) => inst.clone({
     ...inst._zod.def,
-    rest
+    res
   });
 });
 function tuple(items, _paramsOrRest, _params) {
@@ -13622,7 +13622,7 @@ function pipe(in_, out) {
   return new ZodPipe({
     type: "pipe",
     in: in_,
-    out
+    ou
   });
 }
 var ZodCodec = /* @__PURE__ */ $constructor("ZodCodec", (inst, def) => {
@@ -14313,6 +14313,10 @@ var settingsSchema = exports_external.object({
     maxDeltaTokens: exports_external.number().int().min(500).default(8000),
     maxSummaryTokens: exports_external.number().int().min(250).default(3000),
     timeoutMs: exports_external.number().int().min(1000).default(60000),
+    rateLimitCooldownMs: exports_external.number().int().min(1000).default(300000),
+    failureCooldownMs: exports_external.number().int().min(1000).default(60000),
+    queueWaitTimeoutMs: exports_external.number().int().min(100).default(5000),
+    queueLeaseMs: exports_external.number().int().min(1e4).default(180000),
     finalSummaryThreshold: exports_external.number().min(1).max(100).default(90),
     retainLastTurns: exports_external.number().int().min(0).max(10).default(1),
     fallbackOn: exports_external.array(exports_external.enum([
@@ -14324,7 +14328,7 @@ var settingsSchema = exports_external.object({
       "server_error",
       "invalid_output"
     ])).default(["provider_unavailable", "model_not_found", "auth", "rate_limit", "timeout", "server_error", "invalid_output"])
-  }).default({ enabled: false, everyTurns: 4, maxDeltaTokens: 8000, maxSummaryTokens: 3000, timeoutMs: 60000, finalSummaryThreshold: 90, retainLastTurns: 1, fallbackOn: ["provider_unavailable", "model_not_found", "auth", "rate_limit", "timeout", "server_error", "invalid_output"] }),
+  }).default({ enabled: false, everyTurns: 4, maxDeltaTokens: 8000, maxSummaryTokens: 3000, timeoutMs: 60000, rateLimitCooldownMs: 300000, failureCooldownMs: 60000, queueWaitTimeoutMs: 5000, queueLeaseMs: 180000, finalSummaryThreshold: 90, retainLastTurns: 1, fallbackOn: ["provider_unavailable", "model_not_found", "auth", "rate_limit", "timeout", "server_error", "invalid_output"] }),
   rotation: exports_external.object({
     strategy: exports_external.literal("sticky").default("sticky"),
     proactivePrimaryPercent: exports_external.number().min(1).max(100).default(90),
@@ -14431,6 +14435,34 @@ var structuredSummarySchema = exports_external.object({
   unresolvedQuestions: exports_external.array(exports_external.string()),
   importantReferences: exports_external.array(exports_external.string())
 });
+var summaryPrioritySchema = exports_external.enum(["routine", "quota", "emergency"]);
+var summaryJobSchema = exports_external.object({
+  id: exports_external.string(),
+  sessionID: exports_external.string(),
+  state: exports_external.enum(["waiting", "claimed"]),
+  priority: summaryPrioritySchema,
+  force: exports_external.boolean(),
+  dirty: exports_external.boolean(),
+  nextAttemptAt: exports_external.number(),
+  owner: exports_external.object({ instanceID: exports_external.string(), pid: exports_external.number(), hostname: exports_external.string(), leaseUntil: exports_external.number() }).optional(),
+  createdAt: exports_external.number(),
+  updatedAt: exports_external.number(),
+  lastError: exports_external.string().optional()
+});
+var summaryCircuitSchema = exports_external.object({
+  key: exports_external.string(),
+  blockedUntil: exports_external.number(),
+  category: exports_external.string(),
+  failures: exports_external.number().int().nonnegative(),
+  updatedAt: exports_external.number(),
+  lastError: exports_external.string().optional()
+});
+var summaryQueueFileSchema = exports_external.object({
+  version: exports_external.literal(1),
+  revision: exports_external.number().int().nonnegative(),
+  jobs: exports_external.array(summaryJobSchema),
+  circuits: exports_external.record(exports_external.string(), summaryCircuitSchema)
+});
 var ledgerSchema = exports_external.object({
   version: exports_external.literal(1),
   revision: exports_external.number().int().nonnegative(),
@@ -14530,6 +14562,7 @@ var paths = {
   legacyAccounts: process.env.OPENCODE_CODEX_ACCOUNTS_PATH ?? join(process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share"), "opencode", "codex-account-pool.json"),
   bindings: join(dataRoot(), "bindings.json"),
   jobs: join(dataRoot(), "scheduler", "jobs.json"),
+  summaryQueue: join(dataRoot(), "scheduler", "summary-queue.json"),
   actions: join(dataRoot(), "actions.json"),
   session(sessionID) {
     if (!/^[a-zA-Z0-9_-]+$/.test(sessionID))
@@ -15689,21 +15722,35 @@ var tui = async (api2) => {
   async function settingsDialog() {
     const current = await settingsStore.get(true);
     const draft = structuredClone(current);
-    pickProfile("Primary summarizer", draft.summarizer.primary, (primary) => {
-      draft.summarizer.primary = primary;
-      select("Configure optional fallback?", [
-        { title: "No fallback", value: false },
-        { title: "Configure fallback", value: true }
-      ], (withFallback) => {
-        const finish = () => configureSummaryNumbers(draft, () => reviewSettings(draft));
-        if (!withFallback) {
-          draft.summarizer.fallback = undefined;
-          finish();
-          return;
-        }
-        pickProfile("Fallback summarizer", draft.summarizer.fallback, (fallback) => {
-          draft.summarizer.fallback = fallback;
-          finish();
+    select("Configure handoff summarizer", [
+      { title: "Disabled (no models)", description: "The account pool works without handoff models", value: "disabled" },
+      { title: "Configure primary model", description: "The fallback remains optional", value: "configure" }
+    ], async (choice) => {
+      if (choice === "disabled") {
+        draft.summarizer.enabled = false;
+        draft.summarizer.primary = undefined;
+        draft.summarizer.fallback = undefined;
+        await settingsStore.save(draft);
+        api2.ui.toast({ title: "Handoff summarizer", message: "Disabled. Account rotation remains active.", variant: "success" });
+        dialog.clear();
+        return;
+      }
+      pickProfile("Primary summarizer", draft.summarizer.primary, (primary) => {
+        draft.summarizer.primary = primary;
+        select("Configure optional fallback?", [
+          { title: "No fallback", value: false },
+          { title: "Configure fallback", value: true }
+        ], (withFallback) => {
+          const finish = () => configureSummaryNumbers(draft, () => reviewSettings(draft));
+          if (!withFallback) {
+            draft.summarizer.fallback = undefined;
+            finish();
+            return;
+          }
+          pickProfile("Fallback summarizer", draft.summarizer.fallback, (fallback) => {
+            draft.summarizer.fallback = fallback;
+            finish();
+          });
         });
       });
     });
@@ -15714,6 +15761,9 @@ var tui = async (api2) => {
       { title: "Maximum new input tokens per summary", key: "maxDeltaTokens", min: 500 },
       { title: "Maximum final summary tokens", key: "maxSummaryTokens", min: 250 },
       { title: "Summarizer timeout in milliseconds", key: "timeoutMs", min: 1000 },
+      { title: "Rate limit cooldown in milliseconds", key: "rateLimitCooldownMs", min: 1000 },
+      { title: "Other failure cooldown in milliseconds", key: "failureCooldownMs", min: 1000 },
+      { title: "Maximum synchronous queue wait in milliseconds", key: "queueWaitTimeoutMs", min: 100 },
       { title: "Final summary quota threshold (%)", key: "finalSummaryThreshold", min: 1 }
     ];
     const next = (index) => {
@@ -16011,5 +16061,5 @@ Summary model: ${summary.generatedBy ? `${summary.generatedBy.providerID}/${summ
 var module = { id: "opencode-codex-account-pool", tui };
 var tui_default = module;
 export {
-  tui_default as default
+  tui_default as defaul
 };

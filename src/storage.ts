@@ -17,6 +17,7 @@ export const paths = {
   legacyAccounts: process.env.OPENCODE_CODEX_ACCOUNTS_PATH ?? join(process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share"), "opencode", "codex-account-pool.json"),
   bindings: join(dataRoot(), "bindings.json"),
   jobs: join(dataRoot(), "scheduler", "jobs.json"),
+  summaryQueue: join(dataRoot(), "scheduler", "summary-queue.json"),
   actions: join(dataRoot(), "actions.json"),
   session(sessionID: string) {
     if (!/^[a-zA-Z0-9_-]+$/.test(sessionID)) throw new Error("Invalid session ID")

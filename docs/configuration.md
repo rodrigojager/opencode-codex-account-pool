@@ -22,7 +22,7 @@ Most settings are managed through `/codex-handoff-config`. The canonical setting
 }
 ```
 
-Fallback is optional and sequential. `variant` is preferred over raw `reasoningEffort` because OpenCode translates variants to provider-specific thinking controls.
+Both profiles are optional. With no primary, generated summaries are disabled while the account pool and deterministic handoff data continue to work. With one model, a job makes one provider attempt. With both profiles, fallback is optional and sequential. `variant` is preferred over raw `reasoningEffort` because OpenCode translates variants to provider-specific thinking controls.
 
 Advanced options are accepted in the schema for providers that do not publish variants, but can be rejected by an incompatible endpoint.
 
@@ -34,11 +34,17 @@ Advanced options are accepted in the schema for providers that do not publish va
 | Delta budget | 8000 tokens |
 | Summary budget | 3000 tokens |
 | Summary timeout | 60000 ms |
+| Rate-limit cooldown | 300000 ms |
+| Other failure cooldown | 60000 ms |
+| Bounded queue wait | 5000 ms |
+| Summary job lease | 180000 ms |
 | Primary proactive quota | 90% |
 | Secondary proactive quota | 95% |
 | Quota poll | 60000 ms |
 | Resume spacing | 15000 ms |
 | Scheduler lease | 60000 ms |
+
+Summary jobs and per-model circuits are stored in `scheduler/summary-queue.json`. `Retry-After` is honored when it is longer than the configured rate-limit cooldown. Repeated idle events do not shorten a pending cooldown.
 
 ## Environment
 

@@ -7,6 +7,7 @@ export declare const paths: {
     legacyAccounts: string;
     bindings: string;
     jobs: string;
+    summaryQueue: string;
     actions: string;
     session(sessionID: string): string;
 };

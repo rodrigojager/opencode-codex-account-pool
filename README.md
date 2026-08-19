@@ -200,14 +200,13 @@ Select OpenAI and one of the `ChatGPT Plus/Pro - add account` methods registered
 
 The wizard guides you through these steps:
 
-1. Select the primary provider.
-2. Select the primary model.
-3. Select its reasoning variant, or use `Default`.
-4. Choose whether to configure an optional fallback model.
-5. Enter the summary cadence, input budget, output budget, timeout, and final-summary threshold.
-6. Review and optionally test the primary and fallback profiles.
-7. Optionally enter provider-specific advanced options as a JSON object.
-8. Select `Save globally`.
+1. Choose `Disabled (no models)` or configure a primary model.
+2. If enabled, select the primary provider, model, and reasoning variant.
+3. Choose whether to configure an optional fallback model.
+4. Enter the summary cadence, budgets, timeout, cooldowns, bounded queue wait, and final-summary threshold.
+5. Review and optionally test the primary and fallback profiles.
+6. Optionally enter provider-specific advanced options as a JSON object.
+7. Select `Save globally`.
 
 Saving from this screen enables the summarizer and applies the settings to every OpenCode window that uses the same plugin data directory.
 
@@ -219,10 +218,13 @@ Saving from this screen enables the summarizer and applies the settings to every
 | `Maximum new input tokens per summary` | `8000` | Approximate maximum new context sent in one summary update. Minimum `500`. |
 | `Maximum final summary tokens` | `3000` | Approximate size limit accepted for the structured summary. Minimum `250`. |
 | `Summarizer timeout in milliseconds` | `60000` | Time allowed for a summary request. Minimum `1000`. |
+| `Rate limit cooldown in milliseconds` | `300000` | Minimum cooldown after a summary rate limit. A longer `Retry-After` is honored. |
+| `Other failure cooldown in milliseconds` | `60000` | Cooldown after another summary failure. |
+| `Maximum synchronous queue wait in milliseconds` | `5000` | Maximum wait for quota or emergency callers; the job remains queued afterward. |
 | `Final summary quota threshold (%)` | `90` | Usage level at which the plugin makes sure a recent final summary exists before handoff. Range `1` to `100`. |
 | Primary/fallback advanced options | `{}` | Optional provider-specific JSON merged into the hidden summary request. Use only options supported by that provider. |
 
-The fallback is sequential, not parallel. It is used only if the primary request fails in one of the categories listed in `summarizer.fallbackOn`.
+The summarizer is optional: with zero models, the account pool and deterministic handoff state still work; with one model, a due job makes one provider attempt; with two, the fallback receives one immediate attempt after an eligible primary failure. Summary jobs are serialized across OpenCode processes, and a persistent per-model circuit prevents other sessions from repeating requests during cooldown.
 
 #### Reading `/codex-handoff-status`
 
@@ -259,6 +261,8 @@ The visible OpenCode transcript is not deleted. The plugin keeps a compact conti
 If enabled, the plugin periodically starts a temporary child session using the provider/model you selected. The hidden agent receives a bounded, redacted version of the previous summary and recent work, produces validated structured JSON, and is then deleted.
 
 It does not write into the parent chat and has no file-editing, shell, task, or web tools. The hidden agent creates the summary; account switching, checkpoints, and context handoff are plugin responsibilities rather than autonomous agent actions.
+
+Routine summaries are queued without blocking the parent session. Only one summary provider request runs globally for the shared plugin data directory. If another session already owns that slot, this session's job waits on disk; quota and emergency refreshes wait at most the configured bounded interval. Rate limits open a persistent model circuit for five minutes by default, or longer when required by `Retry-After`.
 
 #### Unexpected account failure
 
@@ -322,6 +326,10 @@ Do not manually edit `accounts.json`; it contains OAuth credentials and is manag
     "maxDeltaTokens": 8000,
     "maxSummaryTokens": 3000,
     "timeoutMs": 60000,
+    "rateLimitCooldownMs": 300000,
+    "failureCooldownMs": 60000,
+    "queueWaitTimeoutMs": 5000,
+    "queueLeaseMs": 180000,
     "finalSummaryThreshold": 90,
     "retainLastTurns": 1,
     "fallbackOn": [
@@ -373,6 +381,10 @@ Replace the example provider and model IDs with IDs that exist in your OpenCode 
 | `summarizer.maxDeltaTokens` | `8000` | Yes | Approximate maximum new summary input. Minimum `500`. |
 | `summarizer.maxSummaryTokens` | `3000` | Yes | Approximate maximum accepted summary size. Minimum `250`. |
 | `summarizer.timeoutMs` | `60000` | Yes | Summary request timeout in milliseconds. Minimum `1000`. |
+| `summarizer.rateLimitCooldownMs` | `300000` | Yes | Minimum rate-limit cooldown. A longer provider `Retry-After` is honored. |
+| `summarizer.failureCooldownMs` | `60000` | Yes | Cooldown after another summary provider or output failure. |
+| `summarizer.queueWaitTimeoutMs` | `5000` | Yes | Bounded wait for a forced refresh; routine work never waits and jobs remain persistent. |
+| `summarizer.queueLeaseMs` | `180000` | No | Cross-process lease for the single active summary job. Minimum `10000`. |
 | `summarizer.finalSummaryThreshold` | `90` | Yes | Quota percentage that triggers a final refresh before handoff. Range `1` to `100`. |
 | `summarizer.retainLastTurns` | `1` | No | Number of recent pre-handoff turns retained with the compact handoff. Range `0` to `10`. |
 | `summarizer.fallbackOn` | All supported categories | No | Failure categories that are allowed to invoke the fallback profile. |
@@ -723,14 +735,13 @@ Selecione OpenAI e um dos métodos `ChatGPT Plus/Pro - adicionar conta` registra
 
 O assistente conduz pelas seguintes etapas:
 
-1. Selecione o provider primary.
-2. Selecione o modelo primary.
-3. Selecione a variant de raciocínio ou use `Default`.
-4. Escolha se deseja configurar um modelo fallback opcional.
-5. Informe frequência, orçamento de entrada, orçamento de saída, timeout e threshold de summary final.
-6. Revise e, opcionalmente, teste os perfis primary e fallback.
-7. Opcionalmente, informe opções avançadas específicas do provider como um objeto JSON.
-8. Selecione `Save globally`.
+1. Escolha `Disabled (no models)` ou configure um modelo primary.
+2. Se habilitado, selecione o provider, o modelo e a variant do primary.
+3. Escolha se deseja configurar um modelo fallback opcional.
+4. Informe frequência, orçamentos, timeout, cooldowns, espera limitada da fila e threshold do summary final.
+5. Revise e, opcionalmente, teste os perfis primary e fallback.
+6. Opcionalmente, informe opções avançadas específicas do provider como um objeto JSON.
+7. Selecione `Save globally`.
 
 Salvar por essa tela habilita o summarizer e aplica as configurações a todas as janelas do OpenCode que usam o mesmo diretório de dados do plugin.
 
@@ -742,10 +753,13 @@ Salvar por essa tela habilita o summarizer e aplica as configurações a todas a
 | `Maximum new input tokens per summary` | `8000` | Máximo aproximado de contexto novo enviado em uma atualização. Mínimo `500`. |
 | `Maximum final summary tokens` | `3000` | Limite aproximado aceito para o summary estruturado. Mínimo `250`. |
 | `Summarizer timeout in milliseconds` | `60000` | Tempo permitido para uma requisição de summary. Mínimo `1000`. |
+| `Rate limit cooldown in milliseconds` | `300000` | Cooldown mínimo após rate limit do summary. Um `Retry-After` maior é respeitado. |
+| `Other failure cooldown in milliseconds` | `60000` | Cooldown após outra falha do summary. |
+| `Maximum synchronous queue wait in milliseconds` | `5000` | Espera máxima para quota ou emergência; depois disso, o job continua na fila. |
 | `Final summary quota threshold (%)` | `90` | Nível de uso em que o plugin garante um summary final recente antes do handoff. Intervalo de `1` a `100`. |
 | Opções avançadas primary/fallback | `{}` | JSON opcional incorporado à requisição interna. Use apenas opções aceitas pelo provider escolhido. |
 
-O fallback é sequencial, não paralelo. Ele só é usado quando o primary falha em uma das categorias presentes em `summarizer.fallbackOn`.
+O summarizer é opcional: com zero modelos, o pool de contas e o estado determinístico de handoff continuam funcionando; com um modelo, cada job faz uma tentativa no provider; com dois, o fallback recebe uma tentativa imediata após uma falha elegível do primary. Os jobs são serializados entre processos do OpenCode, e um circuito persistente por modelo impede que outras sessões repitam requisições durante o cooldown.
 
 #### Entendendo `/codex-handoff-status`
 
@@ -782,6 +796,8 @@ O transcript visível no OpenCode não é apagado. O plugin mantém um estado co
 Quando habilitado, o plugin inicia periodicamente uma sessão filha temporária usando o provider/model escolhido. O agente oculto recebe uma versão limitada e redigida do summary anterior e do trabalho recente, produz um JSON estruturado validado e depois é apagado.
 
 Ele não escreve no chat principal e não possui ferramentas de edição, shell, task ou web. O agente oculto cria o summary; troca de contas, checkpoints e aplicação do handoff são responsabilidades do plugin, não ações autônomas do agente.
+
+Summaries de rotina entram na fila sem bloquear a sessão principal. Apenas uma requisição ao provider de summary roda globalmente no diretório compartilhado do plugin. Se outra sessão já ocupa essa vaga, o job desta sessão aguarda em disco; atualizações de quota e emergência esperam no máximo o intervalo configurado. Rate limits abrem um circuito persistente do modelo por cinco minutos por padrão, ou por mais tempo quando o `Retry-After` exigir.
 
 #### Falha inesperada de uma conta
 
@@ -845,6 +861,10 @@ Não edite `accounts.json` manualmente; ele contém credenciais OAuth e é geren
     "maxDeltaTokens": 8000,
     "maxSummaryTokens": 3000,
     "timeoutMs": 60000,
+    "rateLimitCooldownMs": 300000,
+    "failureCooldownMs": 60000,
+    "queueWaitTimeoutMs": 5000,
+    "queueLeaseMs": 180000,
     "finalSummaryThreshold": 90,
     "retainLastTurns": 1,
     "fallbackOn": [
@@ -896,6 +916,10 @@ Substitua os IDs de provider e modelo do exemplo por IDs existentes na sua insta
 | `summarizer.maxDeltaTokens` | `8000` | Sim | Máximo aproximado de entrada nova para o summary. Mínimo `500`. |
 | `summarizer.maxSummaryTokens` | `3000` | Sim | Tamanho máximo aproximado aceito para o summary. Mínimo `250`. |
 | `summarizer.timeoutMs` | `60000` | Sim | Timeout da requisição de summary em milissegundos. Mínimo `1000`. |
+| `summarizer.rateLimitCooldownMs` | `300000` | Sim | Cooldown mínimo de rate limit. Um `Retry-After` maior do provider é respeitado. |
+| `summarizer.failureCooldownMs` | `60000` | Sim | Cooldown após outra falha do provider ou da saída do summary. |
+| `summarizer.queueWaitTimeoutMs` | `5000` | Sim | Espera limitada de uma atualização forçada; jobs de rotina não bloqueiam e a fila é persistente. |
+| `summarizer.queueLeaseMs` | `180000` | Não | Lease entre processos para o único job de summary ativo. Mínimo `10000`. |
 | `summarizer.finalSummaryThreshold` | `90` | Sim | Percentual de quota que dispara uma atualização final antes do handoff. Intervalo de `1` a `100`. |
 | `summarizer.retainLastTurns` | `1` | Não | Número de turnos recentes anteriores ao handoff mantidos com o estado compacto. Intervalo de `0` a `10`. |
 | `summarizer.fallbackOn` | Todas as categorias aceitas | Não | Categorias de falha autorizadas a acionar o perfil fallback. |

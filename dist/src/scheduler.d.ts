@@ -16,7 +16,7 @@ export declare class JobStore {
         id: string;
         sessionID: string;
         goalActive: boolean;
-        state: "completed" | "failed" | "waiting" | "claimed" | "resuming" | "cancelled";
+        state: "completed" | "waiting" | "claimed" | "failed" | "resuming" | "cancelled";
         resumeAt: number;
         targetAccountID: string;
         epoch: number;
@@ -43,7 +43,7 @@ export declare class JobStore {
         id: string;
         sessionID: string;
         goalActive: boolean;
-        state: "completed" | "failed" | "waiting" | "claimed" | "resuming" | "cancelled";
+        state: "completed" | "waiting" | "claimed" | "failed" | "resuming" | "cancelled";
         resumeAt: number;
         targetAccountID: string;
         epoch: number;
@@ -70,7 +70,7 @@ export declare class JobStore {
         id: string;
         sessionID: string;
         goalActive: boolean;
-        state: "completed" | "failed" | "waiting" | "claimed" | "resuming" | "cancelled";
+        state: "completed" | "waiting" | "claimed" | "failed" | "resuming" | "cancelled";
         resumeAt: number;
         targetAccountID: string;
         epoch: number;
@@ -126,7 +126,7 @@ export declare class ResumeScheduler {
         id: string;
         sessionID: string;
         goalActive: boolean;
-        state: "completed" | "failed" | "waiting" | "claimed" | "resuming" | "cancelled";
+        state: "completed" | "waiting" | "claimed" | "failed" | "resuming" | "cancelled";
         resumeAt: number;
         targetAccountID: string;
         epoch: number;

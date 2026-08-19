@@ -14,6 +14,10 @@ export declare class SettingsStore {
             maxDeltaTokens: number;
             maxSummaryTokens: number;
             timeoutMs: number;
+            rateLimitCooldownMs: number;
+            failureCooldownMs: number;
+            queueWaitTimeoutMs: number;
+            queueLeaseMs: number;
             finalSummaryThreshold: number;
             retainLastTurns: number;
             fallbackOn: ("provider_unavailable" | "model_not_found" | "auth" | "rate_limit" | "timeout" | "server_error" | "invalid_output")[];
@@ -61,6 +65,10 @@ export declare class SettingsStore {
             maxDeltaTokens: number;
             maxSummaryTokens: number;
             timeoutMs: number;
+            rateLimitCooldownMs: number;
+            failureCooldownMs: number;
+            queueWaitTimeoutMs: number;
+            queueLeaseMs: number;
             finalSummaryThreshold: number;
             retainLastTurns: number;
             fallbackOn: ("provider_unavailable" | "model_not_found" | "auth" | "rate_limit" | "timeout" | "server_error" | "invalid_output")[];

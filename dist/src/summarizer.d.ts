@@ -1,15 +1,24 @@
-import { type Settings } from "./domain";
+import { type Settings, type SummaryPriority } from "./domain";
 import { LedgerStore } from "./ledger";
 import { HandoffStore } from "./handoff";
+import { SummaryQueueStore } from "./summary-queue";
 export declare class SummaryCoordinator {
     private client;
     private directory;
+    private settings;
     private ledger;
     private handoff;
-    private jobs;
+    private queue;
+    readonly instanceID: string;
+    private timer?;
+    private ticking;
     private internal;
     private internalProfiles;
-    constructor(client: any, directory: string, ledger?: LedgerStore, handoff?: HandoffStore);
+    private retryFailures;
+    private waiters;
+    constructor(client: any, directory: string, settings: () => Promise<Settings>, ledger?: LedgerStore, handoff?: HandoffStore, queue?: SummaryQueueStore);
+    start(): void;
+    stop(): void;
     isInternal(sessionID?: string): boolean;
     profile(sessionID?: string): {
         providerID: string;
@@ -17,9 +26,16 @@ export declare class SummaryCoordinator {
         variant?: string | undefined;
         advancedOptions?: Record<string, unknown> | undefined;
     } | undefined;
-    schedule(sessionID: string, settings: Settings, force?: boolean): void;
-    refresh(sessionID: string, settings: Settings): Promise<void>;
-    private runLoop;
+    event(event: any): Promise<boolean>;
+    schedule(sessionID: string, force?: boolean, priority?: SummaryPriority): Promise<boolean>;
+    refresh(sessionID: string, priority?: SummaryPriority): Promise<boolean>;
+    cancel(sessionID: string): Promise<void>;
+    private removeWaiter;
+    private notify;
+    private tick;
+    private execute;
     private run;
+    private attempt;
+    private save;
     private invoke;
 }

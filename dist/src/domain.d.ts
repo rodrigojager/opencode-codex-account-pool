@@ -29,6 +29,10 @@ export declare const settingsSchema: z.ZodObject<{
         maxDeltaTokens: z.ZodDefault<z.ZodNumber>;
         maxSummaryTokens: z.ZodDefault<z.ZodNumber>;
         timeoutMs: z.ZodDefault<z.ZodNumber>;
+        rateLimitCooldownMs: z.ZodDefault<z.ZodNumber>;
+        failureCooldownMs: z.ZodDefault<z.ZodNumber>;
+        queueWaitTimeoutMs: z.ZodDefault<z.ZodNumber>;
+        queueLeaseMs: z.ZodDefault<z.ZodNumber>;
         finalSummaryThreshold: z.ZodDefault<z.ZodNumber>;
         retainLastTurns: z.ZodDefault<z.ZodNumber>;
         fallbackOn: z.ZodDefault<z.ZodArray<z.ZodEnum<{
@@ -284,6 +288,84 @@ export declare const structuredSummarySchema: z.ZodObject<{
 }, z.core.$strip>;
 export type StructuredSummary = z.infer<typeof structuredSummarySchema>;
 export type FailureCategory = Settings["summarizer"]["fallbackOn"][number];
+export declare const summaryPrioritySchema: z.ZodEnum<{
+    quota: "quota";
+    routine: "routine";
+    emergency: "emergency";
+}>;
+export type SummaryPriority = z.infer<typeof summaryPrioritySchema>;
+export declare const summaryJobSchema: z.ZodObject<{
+    id: z.ZodString;
+    sessionID: z.ZodString;
+    state: z.ZodEnum<{
+        waiting: "waiting";
+        claimed: "claimed";
+    }>;
+    priority: z.ZodEnum<{
+        quota: "quota";
+        routine: "routine";
+        emergency: "emergency";
+    }>;
+    force: z.ZodBoolean;
+    dirty: z.ZodBoolean;
+    nextAttemptAt: z.ZodNumber;
+    owner: z.ZodOptional<z.ZodObject<{
+        instanceID: z.ZodString;
+        pid: z.ZodNumber;
+        hostname: z.ZodString;
+        leaseUntil: z.ZodNumber;
+    }, z.core.$strip>>;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    lastError: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type SummaryJob = z.infer<typeof summaryJobSchema>;
+export declare const summaryCircuitSchema: z.ZodObject<{
+    key: z.ZodString;
+    blockedUntil: z.ZodNumber;
+    category: z.ZodString;
+    failures: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    lastError: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type SummaryCircuit = z.infer<typeof summaryCircuitSchema>;
+export declare const summaryQueueFileSchema: z.ZodObject<{
+    version: z.ZodLiteral<1>;
+    revision: z.ZodNumber;
+    jobs: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        sessionID: z.ZodString;
+        state: z.ZodEnum<{
+            waiting: "waiting";
+            claimed: "claimed";
+        }>;
+        priority: z.ZodEnum<{
+            quota: "quota";
+            routine: "routine";
+            emergency: "emergency";
+        }>;
+        force: z.ZodBoolean;
+        dirty: z.ZodBoolean;
+        nextAttemptAt: z.ZodNumber;
+        owner: z.ZodOptional<z.ZodObject<{
+            instanceID: z.ZodString;
+            pid: z.ZodNumber;
+            hostname: z.ZodString;
+            leaseUntil: z.ZodNumber;
+        }, z.core.$strip>>;
+        createdAt: z.ZodNumber;
+        updatedAt: z.ZodNumber;
+        lastError: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>>;
+    circuits: z.ZodRecord<z.ZodString, z.ZodObject<{
+        key: z.ZodString;
+        blockedUntil: z.ZodNumber;
+        category: z.ZodString;
+        failures: z.ZodNumber;
+        updatedAt: z.ZodNumber;
+        lastError: z.ZodOptional<z.ZodString>;
+    }, z.core.$strip>>;
+}, z.core.$strip>;
 export declare const ledgerSchema: z.ZodObject<{
     version: z.ZodLiteral<1>;
     revision: z.ZodNumber;
@@ -423,9 +505,9 @@ export declare const resumeJobSchema: z.ZodObject<{
     goalActive: z.ZodBoolean;
     state: z.ZodEnum<{
         completed: "completed";
-        failed: "failed";
         waiting: "waiting";
         claimed: "claimed";
+        failed: "failed";
         resuming: "resuming";
         cancelled: "cancelled";
     }>;
@@ -460,9 +542,9 @@ export declare const jobsFileSchema: z.ZodObject<{
         goalActive: z.ZodBoolean;
         state: z.ZodEnum<{
             completed: "completed";
-            failed: "failed";
             waiting: "waiting";
             claimed: "claimed";
+            failed: "failed";
             resuming: "resuming";
             cancelled: "cancelled";
         }>;
@@ -495,8 +577,8 @@ export declare const accountActionSchema: z.ZodObject<{
     accountID: z.ZodString;
     state: z.ZodEnum<{
         completed: "completed";
-        failed: "failed";
         claimed: "claimed";
+        failed: "failed";
         pending: "pending";
     }>;
     owner: z.ZodOptional<z.ZodString>;
@@ -517,8 +599,8 @@ export declare const accountActionsFileSchema: z.ZodObject<{
         accountID: z.ZodString;
         state: z.ZodEnum<{
             completed: "completed";
-            failed: "failed";
             claimed: "claimed";
+            failed: "failed";
             pending: "pending";
         }>;
         owner: z.ZodOptional<z.ZodString>;
