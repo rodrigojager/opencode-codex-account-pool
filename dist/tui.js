@@ -14619,7 +14619,18 @@ async function atomicWrite(path, value, secret = false) {
   await mkdir(dirname(path), { recursive: true });
   const temp = `${path}.${hostname3()}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temp, JSON.stringify(value, null, 2), { mode: secret ? 384 : 420 });
-  await rename(temp, path);
+  const started = Date.now();
+  for (;; ) {
+    try {
+      await rename(temp, path);
+      break;
+    } catch (error51) {
+      const code = error51.code;
+      if (process.platform !== "win32" || !["EPERM", "EACCES", "EBUSY"].includes(code ?? "") || Date.now() - started >= 2000)
+        throw error51;
+      await sleep(50);
+    }
+  }
   if (secret)
     await chmod(path, 384).catch(() => {});
 }
@@ -14823,6 +14834,9 @@ class AccountStore {
       const now = Date.now();
       if (account) {
         Object.assign(account, Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== undefined)), { updatedAt: now, enabled: true });
+        account.health.cooldownUntil = undefined;
+        account.health.lastStatus = undefined;
+        account.health.lastErrorAt = undefined;
         if (normalized.label)
           account.label = normalized.label;
         data.initialized = true;

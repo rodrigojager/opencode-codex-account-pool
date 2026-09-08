@@ -21,6 +21,11 @@ export interface TokenIdentity {
     organizationID?: string;
 }
 export declare function tokenIdentity(tokens: Pick<OAuthTokens, "id_token" | "access_token">): TokenIdentity;
+export declare class TokenRefreshError extends Error {
+    readonly status: number;
+    readonly reason?: string | undefined;
+    constructor(status: number, reason?: string | undefined);
+}
 export declare function refreshTokens(refreshToken: string, issuer?: string): Promise<OAuthTokens>;
 export declare function cancelBrowserAuthorization(message?: string): void;
 export declare function browserAuthorization(issuer?: string, options?: BrowserAuthorizationOptions): Promise<{

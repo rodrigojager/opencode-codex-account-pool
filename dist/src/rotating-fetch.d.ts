@@ -7,6 +7,11 @@ export declare class AllAccountsExhaustedError extends Error {
     readonly resumeAt: number | undefined;
     constructor(account: Account | undefined, resumeAt: number | undefined);
 }
+export declare class NoAccountsAvailableError extends Error {
+    readonly account: Account | undefined;
+    readonly retryAt: number | undefined;
+    constructor(account: Account | undefined, retryAt: number | undefined);
+}
 export interface RotationOptions {
     settings: () => Promise<Settings>;
     bindings?: BindingStore;

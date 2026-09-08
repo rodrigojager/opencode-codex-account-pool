@@ -14621,7 +14621,18 @@ async function atomicWrite(path, value, secret = false) {
   await mkdir(dirname(path), { recursive: true });
   const temp = `${path}.${hostname3()}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temp, JSON.stringify(value, null, 2), { mode: secret ? 384 : 420 });
-  await rename(temp, path);
+  const started = Date.now();
+  for (;; ) {
+    try {
+      await rename(temp, path);
+      break;
+    } catch (error51) {
+      const code = error51.code;
+      if (process.platform !== "win32" || !["EPERM", "EACCES", "EBUSY"].includes(code ?? "") || Date.now() - started >= 2000)
+        throw error51;
+      await sleep(50);
+    }
+  }
   if (secret)
     await chmod(path, 384).catch(() => {});
 }
@@ -14825,6 +14836,9 @@ class AccountStore {
       const now = Date.now();
       if (account) {
         Object.assign(account, Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== undefined)), { updatedAt: now, enabled: true });
+        account.health.cooldownUntil = undefined;
+        account.health.lastStatus = undefined;
+        account.health.lastErrorAt = undefined;
         if (normalized.label)
           account.label = normalized.label;
         data.initialized = true;
@@ -16126,6 +16140,18 @@ function tokenIdentity(tokens) {
     organizationID: organizations?.[0]?.id
   };
 }
+
+class TokenRefreshError extends Error {
+  status;
+  reason;
+  constructor(status, reason) {
+    const detail = reason === "refresh_token_reused" ? "refresh token was already used" : reason === "refresh_token_expired" ? "refresh token expired" : reason === "refresh_token_invalidated" ? "refresh token was revoked" : "authentication was rejected";
+    super(`Token refresh failed: ${status}${status === 401 || status === 400 && reason === "invalid_grant" ? ` (${detail}; reconnect this account in the Codex Account Pool)` : ""}`);
+    this.status = status;
+    this.reason = reason;
+    this.name = "TokenRefreshError";
+  }
+}
 async function refreshTokens(refreshToken, issuer = DEFAULT_ISSUER) {
   const response = await fetch(`${issuer}/oauth/token`, {
     method: "POST",
@@ -16137,8 +16163,15 @@ async function refreshTokens(refreshToken, issuer = DEFAULT_ISSUER) {
     }),
     signal: AbortSignal.timeout(15000)
   });
-  if (!response.ok)
-    throw new Error(`Token refresh failed: ${response.status}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => {
+      return;
+    });
+    const error51 = payload && typeof payload === "object" && "error" in payload ? payload.error : undefined;
+    const code = typeof error51 === "string" ? error51 : error51 && typeof error51 === "object" && ("code" in error51) ? error51.code : undefined;
+    const known = ["refresh_token_reused", "refresh_token_expired", "refresh_token_invalidated", "invalid_grant"];
+    throw new TokenRefreshError(response.status, typeof code === "string" && known.includes(code) ? code : undefined);
+  }
   return response.json();
 }
 async function exchangeCode(code, redirectUri, pkce, issuer) {
@@ -16370,6 +16403,17 @@ class AllAccountsExhaustedError extends Error {
     this.name = "AllAccountsExhaustedError";
   }
 }
+
+class NoAccountsAvailableError extends Error {
+  account;
+  retryAt;
+  constructor(account, retryAt) {
+    super(account ? `Codex accounts are temporarily unavailable after request failures. Retry in ${Math.max(1, Math.ceil(((retryAt ?? Date.now()) - Date.now()) / 1000))}s${account.health.lastStatus === 401 ? " or reconnect the account in the Codex Account Pool" : ""}.` : "No enabled Codex account is configured. Connect or enable an account in the Codex Account Pool.");
+    this.account = account;
+    this.retryAt = retryAt;
+    this.name = "NoAccountsAvailableError";
+  }
+}
 function retryAfter(response, fallback) {
   const value = response.headers.get("retry-after");
   if (!value)
@@ -16391,6 +16435,22 @@ function replayable(input, init) {
     return false;
   return !(input instanceof Request && input.bodyUsed);
 }
+function requestSignal(input, init) {
+  return init?.signal ?? (input instanceof Request ? input.signal : undefined);
+}
+function cancellationName(error51) {
+  return error51 && typeof error51 === "object" && "name" in error51 ? String(error51.name) : "";
+}
+function throwIfCancelled(input, init) {
+  const signal = requestSignal(input, init);
+  if (signal?.aborted)
+    throw signal.reason ?? new DOMException("The operation was aborted", "AbortError");
+}
+function cancelledByCaller(input, init, error51) {
+  if (requestSignal(input, init)?.aborted)
+    return true;
+  return ["AbortError", "TimeoutError", "ProviderHeaderTimeoutError"].includes(cancellationName(error51));
+}
 function cloneInput(input) {
   return input instanceof Request ? input.clone() : input;
 }
@@ -16400,33 +16460,27 @@ function createRotatingFetch(store, options) {
   const baseFetch = options.fetch ?? globalThis.fetch;
   const bindings = options.bindings ?? new BindingStore;
   const quota = options.quota ?? new QuotaService(store, baseFetch);
-  const refreshes = new Map;
-  async function refresh(account) {
-    let pending2 = refreshes.get(account.id);
-    if (!pending2) {
-      pending2 = (async () => {
-        const lock = await FileLock.acquire(`refresh:${account.id}`, 15000, 60000);
-        try {
-          const latest = (await store.snapshot()).accounts.find((item) => item.id === account.id) ?? account;
-          if (latest.accessToken && latest.expiresAt > Date.now() + 30000)
-            return latest;
-          const tokens = await refreshTokens(latest.refreshToken, issuer);
-          const identity = tokenIdentity(tokens);
-          await store.updateTokens(latest.id, {
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token ?? latest.refreshToken,
-            expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-            workspaceAccountID: identity.accountId ?? latest.workspaceAccountID,
-            email: identity.email ?? latest.email
-          });
-          return (await store.snapshot()).accounts.find((item) => item.id === latest.id);
-        } finally {
-          await lock.release();
-        }
-      })().finally(() => refreshes.delete(account.id));
-      refreshes.set(account.id, pending2);
+  async function refresh(account, rejectedToken) {
+    const lock = await FileLock.acquire(`refresh:${account.id}`, 20000, 60000);
+    try {
+      const latest = (await store.snapshot()).accounts.find((item) => item.id === account.id);
+      if (!latest || !latest.enabled)
+        throw new Error("Codex account was removed or disabled during token refresh");
+      if (latest.accessToken && latest.expiresAt > Date.now() + 30000 && latest.accessToken !== rejectedToken)
+        return latest;
+      const tokens = await refreshTokens(latest.refreshToken, issuer);
+      const identity = tokenIdentity(tokens);
+      await store.updateTokens(latest.id, {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token ?? latest.refreshToken,
+        expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+        workspaceAccountID: identity.accountId ?? latest.workspaceAccountID,
+        email: identity.email ?? latest.email
+      });
+      return (await store.snapshot()).accounts.find((item) => item.id === latest.id);
+    } finally {
+      await lock.release();
     }
-    return pending2;
   }
   async function execute(account, input, init) {
     if (!account.accessToken || account.expiresAt <= Date.now() + 30000)
@@ -16434,64 +16488,84 @@ function createRotatingFetch(store, options) {
     const headers = requestHeaders(input, init);
     headers.delete("x-api-key");
     headers.delete("Authorization");
+    headers.delete("ChatGPT-Account-Id");
     headers.set("authorization", `Bearer ${account.accessToken}`);
     if (account.workspaceAccountID)
       headers.set("ChatGPT-Account-Id", account.workspaceAccountID);
     const source = input instanceof Request ? new URL(input.url) : new URL(input.toString());
     const url2 = source.pathname.includes("/v1/responses") || source.pathname.includes("/chat/completions") ? new URL(endpoint) : source;
-    if (input instanceof Request)
-      return baseFetch(new Request(url2, input), { ...init, headers });
-    return baseFetch(url2, { ...init, headers });
+    const response = input instanceof Request ? await baseFetch(new Request(url2, input), { ...init, headers }) : await baseFetch(url2, { ...init, headers });
+    return { account, response };
   }
   return async (originalInput, originalInit) => {
+    throwIfCancelled(originalInput, originalInit);
     const sid = sessionID(originalInput, originalInit);
     const settings = await options.settings();
     const snapshot = await store.snapshot();
     const binding = sid ? await bindings.get(sid) : undefined;
     const preferred = binding?.accountID ?? snapshot.defaultAccountID;
+    const now = Date.now();
     const priority = rotateAccounts(orderAccounts(snapshot.accounts, snapshot.order), preferred);
-    const first = selectAccount(priority, preferred);
+    const first = selectAccount(priority, preferred, now);
     if (!first) {
-      const earliest = earliestAccount(priority);
-      await options.onAllExhausted?.(sid, earliest?.account, earliest?.at);
-      throw new AllAccountsExhaustedError(earliest?.account, earliest?.at);
+      const enabled = priority.filter((item) => item.enabled);
+      const earliest = earliestAccount(priority, now);
+      const quotaExhausted = enabled.length > 0 && enabled.every((item) => blockedUntil(item, now) > now);
+      if (quotaExhausted) {
+        await options.onAllExhausted?.(sid, earliest?.account, earliest?.at);
+        throw new AllAccountsExhaustedError(earliest?.account, earliest?.at);
+      }
+      throw new NoAccountsAvailableError(earliest?.account, earliest?.at);
     }
-    const ordered = priority.filter((item) => blockedUntil(item) <= Date.now() && (item.health.cooldownUntil ?? 0) <= Date.now());
+    const ordered = priority.filter((item) => item.enabled && blockedUntil(item, now) <= now && (item.health.cooldownUntil ?? 0) <= now);
     const attempts = replayable(originalInput, originalInit) ? Math.min(settings.rotation.maxAttempts, ordered.length) : 1;
     let input = originalInput;
     let init = originalInit;
-    let lastResponse;
-    let lastError;
     for (let index = 0;index < attempts; index++) {
       let account = ordered[index];
+      throwIfCancelled(input, init);
+      const reservation = await bindings.reserve(account.id, sid);
+      let released = false;
+      let streaming = false;
+      let response;
+      const release = async () => {
+        if (released)
+          return;
+        await bindings.releaseReservation(reservation.id);
+        released = true;
+      };
+      const next = index + 1 < attempts ? ordered[index + 1] : undefined;
       try {
-        let reservation = await bindings.reserve(account.id, sid);
-        let released = false;
-        const release = async () => {
-          if (released)
-            return;
-          released = true;
-          await bindings.releaseReservation(reservation.id);
-        };
-        let response;
         try {
-          response = await execute(account, cloneInput(input), init);
-        } catch (error51) {
-          await release();
-          throw error51;
-        }
-        if ((response.status === 401 || response.status === 403) && account.refreshToken) {
-          await response.body?.cancel().catch(() => {});
-          account = await refresh({ ...account, expiresAt: 0 });
-          await release();
-          reservation = await bindings.reserve(account.id, sid);
-          released = false;
-          try {
-            response = await execute(account, cloneInput(input), init);
-          } catch (error51) {
-            await release();
-            throw error51;
+          const result = await execute(account, cloneInput(input), init);
+          account = result.account;
+          response = result.response;
+          if (response.status === 401 && account.refreshToken && replayable(input, init)) {
+            await response.body?.cancel().catch(() => {});
+            account = await refresh(account, account.accessToken);
+            throwIfCancelled(input, init);
+            const retry = await execute(account, cloneInput(input), init);
+            account = retry.account;
+            response = retry.response;
           }
+        } catch (error51) {
+          if (cancelledByCaller(input, init, error51)) {
+            const signal = requestSignal(input, init);
+            throw signal?.aborted ? signal.reason ?? error51 : error51;
+          }
+          const code = error51 && typeof error51 === "object" && "code" in error51 ? String(error51.code) : "";
+          if (["EPERM", "EACCES", "EBUSY", "ENOSPC", "EIO", "EROFS"].includes(code) || error51 instanceof Error && error51.message.startsWith("Invalid plugin data file:"))
+            throw error51;
+          const status = error51 instanceof TokenRefreshError ? error51.status : 0;
+          await store.recordOutcome(account.id, status, false, Date.now() + settings.rotation.authFailureCooldownMs);
+          await release();
+          await options.onFailover?.(sid, account, next, status);
+          if (!next)
+            throw error51;
+          const prepared2 = await options.prepareFailover?.({ sessionID: sid, from: account, to: next, requestInput: input, init });
+          input = prepared2?.requestInput ?? input;
+          init = prepared2?.init ?? init;
+          continue;
         }
         if (response.ok) {
           await store.recordOutcome(account.id, response.status, true);
@@ -16524,9 +16598,10 @@ function createRotatingFetch(store, options) {
               await release();
             }
           });
-          return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+          const result = new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+          streaming = true;
+          return result;
         }
-        lastResponse = response;
         const retryable = response.status === 401 || response.status === 403 || response.status === 429 || response.status >= 500;
         if (!retryable) {
           await store.recordOutcome(account.id, response.status, false);
@@ -16544,9 +16619,8 @@ function createRotatingFetch(store, options) {
           await store.updateQuota(account.id, parsed);
         }
         await store.recordOutcome(account.id, response.status, false, Date.now() + cooldown);
-        const next = ordered[index + 1];
         await options.onFailover?.(sid, account, next, response.status);
-        if (!next || index + 1 >= attempts) {
+        if (!next) {
           await release();
           if (response.status === 429) {
             const fresh = await store.snapshot();
@@ -16561,22 +16635,14 @@ function createRotatingFetch(store, options) {
         input = prepared?.requestInput ?? input;
         init = prepared?.init ?? init;
       } catch (error51) {
-        if (error51 instanceof DOMException && error51.name === "AbortError")
-          throw error51;
-        lastError = error51;
-        await store.recordOutcome(account.id, 0, false, Date.now() + settings.rotation.authFailureCooldownMs);
-        const next = ordered[index + 1];
-        await options.onFailover?.(sid, account, next, 0);
-        if (next) {
-          const prepared = await options.prepareFailover?.({ sessionID: sid, from: account, to: next, requestInput: input, init });
-          input = prepared?.requestInput ?? input;
-          init = prepared?.init ?? init;
-        }
+        await response?.body?.cancel().catch(() => {});
+        throw error51;
+      } finally {
+        if (!streaming)
+          await release();
       }
     }
-    if (lastResponse)
-      return lastResponse;
-    throw lastError ?? new Error("All Codex OAuth accounts failed");
+    throw new Error("All Codex OAuth accounts failed");
   };
 }
 

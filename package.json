@@ -1,6 +1,6 @@
 {
   "name": "opencode-codex-account-pool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Multi-account ChatGPT OAuth rotation for OpenCode Codex",
   "type": "module",
   "main": "./dist/server.js",
