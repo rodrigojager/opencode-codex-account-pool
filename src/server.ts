@@ -14,6 +14,7 @@ import { browserAuthorization, cancelBrowserAuthorization, DEFAULT_CODEX_ENDPOIN
 import { createRotatingFetch } from "./rotating-fetch"
 import type { Account, Settings } from "./domain"
 import { AccountActionStore } from "./actions"
+import { ensureAstraModel } from "./provider"
 
 interface Options extends PluginOptions {
   issuer?: string
@@ -184,6 +185,13 @@ const ServerPlugin: Plugin = async (ctx, rawOptions) => {
         description: "Maintains a structured handoff summary in an isolated child session.", mode: "subagent", hidden: true,
         permission: { edit: "deny", bash: "deny", task: "deny", webfetch: "deny", websearch: "deny" },
       } as any
+    },
+    provider: {
+      id: "openai",
+      async models(provider, context) {
+        if (context.auth?.type !== "oauth") return provider.models
+        return ensureAstraModel(provider)
+      },
     },
     auth: {
       provider: "openai",

@@ -16657,6 +16657,42 @@ class AccountActionStore {
   }
 }
 
+// src/provider.ts
+var ASTRA_MODEL_ID = "gpt-6-astra";
+function ensureAstraModel(provider) {
+  if (provider.models[ASTRA_MODEL_ID])
+    return provider.models;
+  const source = provider.models["gpt-5.6-sol"] ?? Object.values(provider.models).find((model) => model.api.id === "gpt-5.6-sol");
+  if (!source)
+    return provider.models;
+  return {
+    ...provider.models,
+    [ASTRA_MODEL_ID]: {
+      ...source,
+      id: ASTRA_MODEL_ID,
+      providerID: provider.id,
+      api: { ...source.api, id: ASTRA_MODEL_ID },
+      name: "GPT-6 Astra",
+      family: "gpt-astra",
+      capabilities: {
+        ...source.capabilities,
+        attachment: true,
+        reasoning: true,
+        temperature: false,
+        toolcall: true,
+        input: { ...source.capabilities.input, text: true, image: true, pdf: true },
+        output: { ...source.capabilities.output, text: true }
+      },
+      limit: { context: 1050000, input: 922000, output: 128000 },
+      status: "active",
+      release_date: "2026-09-04",
+      options: { ...source.options },
+      headers: { ...source.headers },
+      variants: source.variants ? { ...source.variants } : undefined
+    }
+  };
+}
+
 // src/server.ts
 var RESUME_RE = /^<codex-account-pool-resume job="([^"]+)" epoch="(\d+)"\/>$/;
 var ServerPlugin = async (ctx, rawOptions) => {
@@ -16844,6 +16880,14 @@ var ServerPlugin = async (ctx, rawOptions) => {
         hidden: true,
         permission: { edit: "deny", bash: "deny", task: "deny", webfetch: "deny", websearch: "deny" }
       };
+    },
+    provider: {
+      id: "openai",
+      async models(provider, context) {
+        if (context.auth?.type !== "oauth")
+          return provider.models;
+        return ensureAstraModel(provider);
+      }
     },
     auth: {
       provider: "openai",
