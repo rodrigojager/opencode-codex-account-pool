@@ -16454,12 +16454,30 @@ function cancelledByCaller(input, init, error51) {
 function cloneInput(input) {
   return input instanceof Request ? input.clone() : input;
 }
+var STREAM_CANCEL_TIMEOUT_MS = 2000;
+async function cancelWithDeadline(stream, reason, timeoutMs) {
+  if (!stream)
+    return;
+  let timer;
+  try {
+    await Promise.race([
+      Promise.resolve().then(() => stream.cancel(reason)).catch(() => {}),
+      new Promise((resolve) => {
+        timer = setTimeout(resolve, timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer !== undefined)
+      clearTimeout(timer);
+  }
+}
 function createRotatingFetch(store, options) {
   const issuer = options.issuer ?? DEFAULT_ISSUER;
   const endpoint = options.codexApiEndpoint ?? DEFAULT_CODEX_ENDPOINT;
   const baseFetch = options.fetch ?? globalThis.fetch;
   const bindings = options.bindings ?? new BindingStore;
   const quota = options.quota ?? new QuotaService(store, baseFetch);
+  const streamCancelTimeoutMs = options.streamCancelTimeoutMs ?? STREAM_CANCEL_TIMEOUT_MS;
   async function refresh(account, rejectedToken) {
     const lock = await FileLock.acquire(`refresh:${account.id}`, 20000, 60000);
     try {
@@ -16541,7 +16559,7 @@ function createRotatingFetch(store, options) {
           account = result.account;
           response = result.response;
           if (response.status === 401 && account.refreshToken && replayable(input, init)) {
-            await response.body?.cancel().catch(() => {});
+            await cancelWithDeadline(response.body, undefined, streamCancelTimeoutMs);
             account = await refresh(account, account.accessToken);
             throwIfCancelled(input, init);
             const retry = await execute(account, cloneInput(input), init);
@@ -16594,7 +16612,7 @@ function createRotatingFetch(store, options) {
               }
             },
             async cancel(reason) {
-              await reader.cancel(reason).catch(() => {});
+              await cancelWithDeadline(reader, reason, streamCancelTimeoutMs);
               await release();
             }
           });
@@ -16629,13 +16647,13 @@ function createRotatingFetch(store, options) {
           }
           return response;
         }
-        await response.body?.cancel().catch(() => {});
+        await cancelWithDeadline(response.body, undefined, streamCancelTimeoutMs);
         await release();
         const prepared = await options.prepareFailover?.({ sessionID: sid, from: account, to: next, requestInput: input, init });
         input = prepared?.requestInput ?? input;
         init = prepared?.init ?? init;
       } catch (error51) {
-        await response?.body?.cancel().catch(() => {});
+        await cancelWithDeadline(response?.body, error51, streamCancelTimeoutMs);
         throw error51;
       } finally {
         if (!streaming)

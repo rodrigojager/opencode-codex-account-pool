@@ -16,6 +16,7 @@ export interface RotationOptions {
     settings: () => Promise<Settings>;
     bindings?: BindingStore;
     quota?: QuotaService;
+    streamCancelTimeoutMs?: number;
     issuer?: string;
     codexApiEndpoint?: string;
     fetch?: typeof globalThis.fetch;
@@ -33,4 +34,5 @@ export interface RotationOptions {
         init?: RequestInit;
     } | void>;
 }
+export declare const STREAM_CANCEL_TIMEOUT_MS = 2000;
 export declare function createRotatingFetch(store: AccountStore, options: RotationOptions): (originalInput: RequestInfo | URL, originalInit?: RequestInit) => Promise<Response>;

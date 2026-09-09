@@ -267,6 +267,7 @@ Routine summaries are queued without blocking the parent session. Only one summa
 #### Unexpected account failure
 
 For replayable requests, authentication failures, rate limits, server errors, and transport failures may trigger another available account. A partially delivered stream is not automatically replayed, protecting you from duplicated model output or duplicated work.
+Provider stream cancellation waits at most two seconds before releasing the account reservation, so a transport that never acknowledges cancellation cannot block host recovery indefinitely.
 
 #### When every account is exhausted
 
@@ -802,6 +803,7 @@ Summaries de rotina entram na fila sem bloquear a sessão principal. Apenas uma 
 #### Falha inesperada de uma conta
 
 Em requisições que podem ser repetidas, falhas de autenticação, rate limits, erros de servidor e falhas de transporte podem acionar outra conta disponível. Um stream entregue parcialmente nunca é repetido automaticamente, evitando saída ou trabalho duplicado.
+O cancelamento de um stream do provedor espera no máximo dois segundos antes de liberar a reserva da conta, impedindo que um transporte que nunca confirme o cancelamento bloqueie indefinidamente a recuperação do host.
 
 #### Quando todas as contas estão esgotadas
 
